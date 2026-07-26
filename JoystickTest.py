@@ -53,9 +53,15 @@ def updateController(app, controller):
     pygame.event.pump() #retrieves data from computer USB
     dx = -(controller.get_axis(0)) #negative to flip direction b/c data is input with right being negative which is confusing
     dy = controller.get_axis(1) #forward/backward
-    throttle = (controller.get_axis(2))+0.7 #throttle level (also inverted)
+    throttle = (controller.get_axis(2))+0.8
     #Need to add 0.7 to account for fact that 0 throttle on joystick is read as
-    #-0.7 by computer
+    #-0.79xxxxxxxxxx by computer
+    if throttle <= 0.1:
+        throttle = 0
+    #b/c there is a slight inaccuracy in controller reading, complete throttle
+    #down can be between -0.8 and -0.7, so I if my scaled throttle is less than
+    #0.1, I arbitrarily set it to 0 to prevent negative (or very small positive) throttle.
+    
     print([dx, dy, throttle])
     app.cx += dx*5 * (throttle*5)
     app.cy -= dy*5 * (throttle*5)
