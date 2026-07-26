@@ -46,7 +46,7 @@ def setupController(app):
             return None
     app.connectedController = True
     controller = pygame.joystick.Joystick(0) #Create joystick instance for my controller
-    controller.init()   #initialize my controller
+    #controller.init()   #initialize my controller (No existe mas en python, no existe mas en mi code)
     return controller
 
 def updateController(app, controller):
