@@ -10,28 +10,45 @@ import pygame #ONLY USED FOR JOYSTICK CONTROL, everything else is CMU Graphics
 from cmu_graphics import *
 
 def onAppStart(app):
-    app.controller = setupController()
-    if not pygame.joystick.get_init:    #No controller connected
-        print('No controller connected, use arrow keys (W/S for throttle)')
+    app.connectedController = False
+    app.controller = setupController(app)
     app.cx = app.width/2
     app.cy = app.height/2
 
 def redrawAll(app):
     drawCircle(app.cx, app.cy, 20)
 
-def onStep(app):
-    updateController(app, app.controller)
+def onKeyHold(app, keys):
+    #Must all be ifs so that can move in multiple directions at same time
+    if 'up' in keys:
+        app.cy -= 5
+    if 'down' in keys:
+        app.cy += 5
+    if 'left' in keys:
+        app.cx -= 5
+    if 'right' in keys:
+        app.cx += 5
+     
 
-def setupController():
+def onStep(app):
+    if app.connectedController:
+        updateController(app, app.controller)
+
+###I wrote both setupController(app) and updateController(app) myself, but I 
+###learned the methods from pygame documentation:
+###https://www.pygame.org/docs/ref/joystick.html#pygame.joystick.Joystick.init
+def setupController(app):
     pygame.init()
     pygame.joystick.init()  #initializes joystick MODULE, small part of pygame
-    
+
+    if pygame.joystick.get_count() == 0:   #No controller connected
+            print('No controller connected, use arrow keys (W/S for throttle)')
+            return None
+    app.connectedController = True
     controller = pygame.joystick.Joystick(0) #Create joystick instance for my controller
     controller.init()   #initialize my controller
     return controller
 
-###Folowing code written myself, I learned the methods from pygame documentation:
-###https://www.pygame.org/docs/ref/joystick.html#pygame.joystick.Joystick.init
 def updateController(app, controller):
     pygame.event.pump() #retrieves data from computer USB
     dx = -(controller.get_axis(0)) #negative to flip direction b/c data is input with right being negative which is confusing
