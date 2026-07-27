@@ -33,8 +33,6 @@ def onAppStart(app):
     propGuard4 = PropGuard(app, 315, 4)
     app.propGuards = [propGuard1, propGuard2, propGuard3, propGuard4]
     
-    # app.cx = app.width/2
-    # app.cy = app.height/2
 
 ###I wrote both setupController(app) and updateController(app) myself, but I 
 ###learned the methods from pygame documentation:
@@ -56,18 +54,17 @@ def updateController(app, controller):
     pygame.event.pump() #retrieves data from computer USB
     app.leftRightAxis = -(controller.get_axis(0)) #negative to flip direction b/c data is input with right being negative which is confusing
     app.forwardBackwardAxis = controller.get_axis(1) #forward/backward
-    app.throttle = (controller.get_axis(2))+0.8
+
     #Need to add 0.8 to account for fact that 0 throttle on joystick is read as
     #~-0.8 by computer
-    if app.throttle <= 0.1:
-        app.throttle = 0
+    app.throttle = (controller.get_axis(2))+0.8
+    
     #b/c there is a slight inaccuracy in controller reading, complete throttle
     #down can be between -0.8 and -0.7, so I if my scaled throttle is less than
     #0.1, I arbitrarily set it to 0 to prevent negative (or very small positive) throttle.
-    
-    print([app.leftRightAxis, app.forwardBackwardAxis, app.throttle])
+    if app.throttle <= 0.1:
+        app.throttle = 0
    
-
 def drawShape(radius, numEdges, dispX, dispY, zDepth):
     #This draws actual octagonal prisms w/ x/y disp from center (and cubes)
     shapeCords = []
@@ -79,6 +76,9 @@ def drawShape(radius, numEdges, dispX, dispY, zDepth):
         angle += 360/numEdges
     return shapeCords
 
+#Citation: Gemini helped me debug. Found an aliasing issue when this used to be
+#a mutating function and pointed out that I was dividing by my projected z
+#instead of my unprojected z (which was horribly distorting everything)
 def project(app, cords):
     projectedCords = []
     projectAndRotateMatrix = numpy.matmul(app.projectionMatrix, makeXRotationMatrix(app.forwardTiltAngle))
@@ -91,7 +91,8 @@ def project(app, cords):
         projectedCords.append(projectedPoint)
     return projectedCords
 
-#Gemini gave the the idea to use % to connect index 7 with index 0
+#Citation: Gemini helped with completing the shape (suggested to use % to 
+#connect index 7 with index 0)
 def drawPrism(numSides, cords, cx, cy):
     for i in range(numSides):
         x1 = cords[i][0] + cx
@@ -101,6 +102,7 @@ def drawPrism(numSides, cords, cx, cy):
         # % by numSides so that the last index connects to index 0
         drawLine(x1, y1, x2, y2)
 
+        #Draws bottom half of 3D shape
         x3 = cords[i+numSides][0] + cx
         y3 = cords[i+numSides][1] + cy
         x4 = cords[((i+1)%numSides)+numSides][0] + cx
@@ -168,16 +170,6 @@ def makeYRotationMatrix(angle):
         [0, 0, 0, 1]
     ]
 
-# def makeZRotationMatrix(angle):
-#     cosVal = math.cos(math.radians(angle))
-#     sinVal = math.sin(math.radians(angle))
-#     return [
-#         [cosVal, -sinVal, 0, 0],
-#         [sinVal, cosVal, 0, 0],
-#         [0, 0, 1, 0],
-#         [0, 0, 0, 1]
-#     ]
-
 #cmu_graphics
 def onKeyHold(app, keys):
     #tilting forward and backward
@@ -220,7 +212,6 @@ def onStep(app):
 
     if app.forwardTiltAngle < 40:
         app.avr.droneCy += 0.5*abs(40-app.forwardTiltAngle)
-
 
 
     app.stepsTaken += 1
