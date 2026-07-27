@@ -13,8 +13,8 @@ def onAppStart(app):
             [0, 0, 1, 0],
             [0, 0, 1, 0]
     ]
-    app.tiltAngleY = 60
-    app.tiltAngleZ = 0
+    app.tiltAngleX = 60
+    app.tiltAngleY = 0
     app.avr = Drone(app, 12)
     propGuard1 = PropGuard(app, 45, 20)
     propGuard2 = PropGuard(app, 135, 20)
@@ -33,37 +33,131 @@ def drawShape(radius, numEdges, dispX, dispY, zDepth):
         angle += 360/numEdges
     return shapeCords
 
+def make2D(app, cords):
+    projectedCords = [] # 1. Create a brand new list so we don't mutate the original
+
+    projectAndRotateMatrix = numpy.matmul(app.projectionMatrix, makeXRotationMatrix(60))
+    projectAndRotateMatrix = numpy.matmul(projectAndRotateMatrix, makeYRotationMatrix(app.tiltAngleY))
+    for i in range(len(cords)):
+        projectedPoint = numpy.matmul(projectAndRotateMatrix, cords[i])
+        perspectiveFactor = cords[i][3]     #Unprojected version, understand why
+        projectedPoint[0] /= perspectiveFactor
+        projectedPoint[1] /= perspectiveFactor
+        projectedCords.append(projectedPoint)
+    return projectedCords
+
+
+###BROKEN
+# def make2D(app, cords):
+#     #projectedCords = [0] * len(cords)
+#     projectedCords = cords
+#     for i in range(len(cords)):
+#         projectAndRotateMatrix = numpy.matmul(app.projectionMatrix, makeXRotationMatrix(60))    #self.tiltAngleX
+#         projectAndRotateMatrix = numpy.matmul(projectAndRotateMatrix, makeYRotationMatrix(app.tiltAngleY))
+#         projectedCords[i] = numpy.matmul(projectAndRotateMatrix, cords[i])
+
+#     perspectiveFactor = None
+#     for i in range(len(cords)): #projectedCords
+#             perspectiveFactor = cords[i][2]
+#             # projectedCords[i][0] /= perspectiveFactor
+#             # projectedCords[i][1] /= perspectiveFactor
+#             print(projectedCords[i][0]/perspectiveFactor)
+#             projectedCords[i][0] /= perspectiveFactor
+
+#             projectedCords[i][1] /= perspectiveFactor
+#     return projectedCords
+
+##WORKING
+# def make2D(self, app, projectedCords):
+#         for i in range(len(self.propGuardCords)):
+#             projectAndRotateMatrix = numpy.matmul(app.projectionMatrix, makeXRotationMatrix(60))
+#             #projectAndRotateMatrix = numpy.matmul(projectAndRotateMatrix, makeZRotationMatrix(self.tiltAngle))
+#             projectAndRotateMatrix = numpy.matmul(projectAndRotateMatrix, makeYRotationMatrix(app.tiltAngleZ)) #THIS CONFUSING, FIX IT
+#             projectedCords[i] = numpy.matmul(projectAndRotateMatrix, self.propGuardCords[i])
+#         perspectiveFactor = None
+#         for i in range(len(self.propGuardCords)):
+#                 perspectiveFactor = self.propGuardCords[i][3]
+#                 print(projectedCords[i][0]/perspectiveFactor)
+#                 projectedCords[i][0] /= perspectiveFactor
+#                 projectedCords[i][1] /= perspectiveFactor
+#         return projectedCords
+
+
+# Combined drawing function for DRY code
+def drawPrism(app, numSides, cords, cx, cy):
+    for i in range(numSides):
+        x1 = cords[i][0] + cx
+        y1 = cords[i][1] + cy
+        x2 = cords[(i+1)%numSides][0] + cx
+        y2 = cords[(i+1)%numSides][1] + cy
+        # % by numSides so that the last index connects to index 0
+        drawLine(x1, y1, x2, y2)
+
+        x3 = cords[i+numSides][0] + cx
+        y3 = cords[i+numSides][1] + cy
+        x4 = cords[((i+1)%numSides)+numSides][0] + cx
+        y4 = cords[((i+1)%numSides)+numSides][1] + cy
+        drawLine(x3, y3, x4, y4)
+
+        # Connects the two faces together
+        drawLine(x1, y1, x3, y3)
+
+#draw2DPolygon code is my own, Gemini helped me brainstorm logic for connecting edges w/ mod
+# def draw2DPolygon(app, numSides, cords):
+    
+#     for i in range(numSides):
+#         x1 = cords[i][0]
+#         y1 = cords[i][1]
+#         x2 = cords[(i+1)%numSides][0]
+#         y2 = cords[(i+1)%numSides][1]
+#         # % by sideLen so that index 3 connects to index 0
+#         drawLine(x1, y1, x2, y2)
+
+#         x3 = cords[i+numSides][0]
+#         y3 = cords[i+numSides][1]
+#         x4 = cords[((i+1)%numSides)+numSides][0]
+#         y4 = cords[((i+1)%numSides)+numSides][1]
+#         drawLine(x3, y3, x4, y4)
+
+#         #Connects the two faces together
+#         drawLine(x1, y1, x3, y3)
+
+# def drawPropGuard(app, numSides, cords):
+    
+#     for i in range(numSides):
+#         x1 = cords[i][0] + app.avr.droneCx
+#         y1 = cords[i][1] + app.avr.droneCy
+#         x2 = cords[(i+1)%numSides][0] + app.avr.droneCx
+#         y2 = cords[(i+1)%numSides][1] + app.avr.droneCy
+#         # % by sideLen so that index 3 connects to index 0
+#         drawLine(x1, y1, x2, y2)
+
+#         x3 = cords[i+numSides][0] + app.avr.droneCx
+#         y3 = cords[i+numSides][1]  + app.avr.droneCy
+#         x4 = cords[((i+1)%numSides)+numSides][0] + app.avr.droneCx
+#         y4 = cords[((i+1)%numSides)+numSides][1] + app.avr.droneCy
+#         drawLine(x3, y3, x4, y4)
+
+#         #Connects the two faces together
+#         drawLine(x1, y1, x3, y3)
+
+
+
 #Holds the center cube as well
 class Drone:
     def __init__(self, app, zDepth):
         self.droneCx = app.width/2
         self.droneCy = app.height/2
         self.cubeSize = 10
-        self.projectedCords = []
+        self.projectedCubeCords = []
         self.makeCenterCube(zDepth)
         self.makeCenterCube(zDepth+10)
-        self.projectedCords = self.make2D(app, copy.deepcopy(self.projectedCords))
+        self.projectedCubeCords = make2D(app, copy.deepcopy(self.projectedCubeCords))
 
     def makeCenterCube(self, zDepth):
-        angle = 45
-        while angle<=360:
-            xDisp = self.cubeSize*math.cos(math.radians(angle))
-            yDisp = self.cubeSize*math.cos(math.radians(angle))
-            self.projectedCords.append((self.droneCx+xDisp, self.droneCy+yDisp, zDepth, 1))
-            angle += 90
-    def make2D(self, app, projectedCords):
-        for i in range(len(self.projectedCords)):
-            projectAndRotateMatrix = numpy.matmul(app.projectionMatrix, makeXRotationMatrix(60))
-            #projectAndRotateMatrix = numpy.matmul(projectAndRotateMatrix, makeZRotationMatrix(self.tiltAngle))
-            projectAndRotateMatrix = numpy.matmul(projectAndRotateMatrix, makeYRotationMatrix(app.tiltAngleZ))
-            projectedCords[i] = numpy.matmul(projectAndRotateMatrix, self.projectedCords[i])
-        perspectiveFactor = None
-        for i in range(len(self.projectedCords)):
-                perspectiveFactor = self.projectedCords[i][3]
-                projectedCords[i][0] /= perspectiveFactor
-                projectedCords[i][1] /= perspectiveFactor
-        return projectedCords
+        self.projectedCubeCords.extend(drawShape(self.cubeSize, 8, 0, 0, zDepth))
 
+ 
 #Easier to define as a class b/c there are 4 of them with very similar attributes.
 class PropGuard:
     def __init__(self, app, drawAngle, zDepth):
@@ -76,32 +170,16 @@ class PropGuard:
         self.propCy = app.avr.droneCy+(self.offsetRadius*math.sin(math.radians(app.tiltAngleY)))
         
         self.propGuardCords = []
-        self.makePropGuard(self.zDepth)
-        self.makePropGuard(self.zDepth+10)
-        self.projectedCords = self.make2D(app, copy.deepcopy(self.propGuardCords))
-        
-    def __repr__(self):
-        return f'{self.propCx}, {self.propCy}'
+        self.makePropGuard(app, self.zDepth)
+        self.makePropGuard(app, self.zDepth+10)
+        self.projectedCords = make2D(app, copy.deepcopy(self.propGuardCords))
 
-    def makePropGuard(self, zDepth):
+    def makePropGuard(self, app, zDepth):
         self.propCx = (self.offsetRadius*math.cos(math.radians(self.drawAngle)))
         self.propCy = (self.offsetRadius*math.sin(math.radians(self.drawAngle)))
         self.propGuardCords.extend(drawShape(self.propRadius, self.propGuardEdges, self.propCx, self.propCy, zDepth))
-    
+        #self.propGuardCords = make2D(app, self.propGuardCords)
 
-    def make2D(self, app, projectedCords):
-        for i in range(len(self.propGuardCords)):
-            projectAndRotateMatrix = numpy.matmul(app.projectionMatrix, makeXRotationMatrix(60))
-            #projectAndRotateMatrix = numpy.matmul(projectAndRotateMatrix, makeZRotationMatrix(self.tiltAngle))
-            projectAndRotateMatrix = numpy.matmul(projectAndRotateMatrix, makeYRotationMatrix(app.tiltAngleZ)) #THIS CONFUSING, FIX IT
-            projectedCords[i] = numpy.matmul(projectAndRotateMatrix, self.propGuardCords[i])
-        perspectiveFactor = None
-        for i in range(len(self.propGuardCords)):
-                perspectiveFactor = self.propGuardCords[i][3]
-                projectedCords[i][0] /= perspectiveFactor
-                projectedCords[i][1] /= perspectiveFactor
-        return projectedCords
-    
 ###Projection Stuff:
 def makeXRotationMatrix(angle):
     cosVal = math.cos(math.radians(angle))
@@ -123,15 +201,15 @@ def makeYRotationMatrix(angle):
         [0, 0, 0, 1]
     ]
 
-def makeZRotationMatrix(angle):
-    cosVal = math.cos(math.radians(angle))
-    sinVal = math.sin(math.radians(angle))
-    return [
-        [cosVal, -sinVal, 0, 0],
-        [sinVal, cosVal, 0, 0],
-        [0, 0, 1, 0],
-        [0, 0, 0, 1]
-    ]
+# def makeZRotationMatrix(angle):
+#     cosVal = math.cos(math.radians(angle))
+#     sinVal = math.sin(math.radians(angle))
+#     return [
+#         [cosVal, -sinVal, 0, 0],
+#         [sinVal, cosVal, 0, 0],
+#         [0, 0, 1, 0],
+#         [0, 0, 0, 1]
+#     ]
 
 #cmu_Graphics
 def onKeyHold(app, keys):
@@ -157,67 +235,28 @@ def onKeyHold(app, keys):
     #tilting left and right
     if 'd' in keys:
             for propGuard in app.propGuards:
-                if app.tiltAngleZ <= 45:
-                    app.tiltAngleZ += 2
+                if app.tiltAngleY <= 45:
+                    app.tiltAngleY += 2
     if 'a' in keys:
             for propGuard in app.propGuards:
-                if app.tiltAngleZ >= -45:
-                    app.tiltAngleZ -= 2
+                if app.tiltAngleY >= -45:
+                    app.tiltAngleY -= 2
 
 
 def redrawAll(app):
     for propGuard in app.propGuards:    #gets each PropGuard instance from a list
         #print(app.stepsTaken, propGuard)
-        draw2DPolygon(app, propGuard) 
-    drawDroneCenter(app, app.avr)    
-
-#Code is my own, Gemini helped me brainstorm logic for connecting edges w/ mod
-def draw2DPolygon(app, self): 
-    numSide = self.propGuardEdges #shorter var name for easy typing
-    for i in range(numSide):
-        x1 = self.projectedCords[i][0] + app.avr.droneCx
-        y1 = self.projectedCords[i][1] + app.avr.droneCy
-        x2 = self.projectedCords[(i+1)%numSide][0] + app.avr.droneCx
-        y2 = self.projectedCords[(i+1)%numSide][1] + app.avr.droneCy
-        # % by sideLen so that index 3 connects to index 0
-        drawLine(x1, y1, x2, y2)
-
-        x3 = self.projectedCords[i+numSide][0] + app.avr.droneCx
-        y3 = self.projectedCords[i+numSide][1]  + app.avr.droneCy
-        x4 = self.projectedCords[((i+1)%numSide)+numSide][0] + app.avr.droneCx
-        y4 = self.projectedCords[((i+1)%numSide)+numSide][1] + app.avr.droneCy
-        drawLine(x3, y3, x4, y4)
-
-        #Connects the two faces together
-        drawLine(x1, y1, x3, y3)
-
-def drawDroneCenter(app, self):
-    numSide = 4 #shorter var name for easy typing
-    for i in range(numSide):
-        x1 = self.projectedCords[i][0] #+ app.avr.droneCx
-        y1 = self.projectedCords[i][1] #+ app.avr.droneCy
-        x2 = self.projectedCords[(i+1)%numSide][0] #+ app.avr.droneCx
-        y2 = self.projectedCords[(i+1)%numSide][1] #+ app.avr.droneCy
-        # % by sideLen so that index 3 connects to index 0
-        drawLine(x1, y1, x2, y2)
-
-        x3 = self.projectedCords[i+numSide][0] #+ app.avr.droneCx
-        y3 = self.projectedCords[i+numSide][1]  #+ app.avr.droneCy
-        x4 = self.projectedCords[((i+1)%numSide)+numSide][0] #+ app.avr.droneCx
-        y4 = self.projectedCords[((i+1)%numSide)+numSide][1] #+ app.avr.droneCy
-        drawLine(x3, y3, x4, y4)
-
-        #Connects the two faces together
-        drawLine(x1, y1, x3, y3)
+        drawPrism(app, propGuard.propGuardEdges, propGuard.projectedCords, app.avr.droneCx, app.avr.droneCy)
+    drawPrism(app, 4, app.avr.projectedCubeCords, app.avr.droneCx, app.avr.droneCy)
 
 def onStep(app):
     app.stepsTaken += 1
     for propGuard in app.propGuards:
-        propGuard.projectedCords = propGuard.propGuardCords #this too early
+        #propGuard.projectedCords = propGuard.propGuardCords #this too early
         propGuard.propGuardCords = []
-        propGuard.makePropGuard(propGuard.zDepth)
-        propGuard.makePropGuard(propGuard.zDepth+10)
-        propGuard.projectedCords = propGuard.make2D(app, copy.deepcopy(propGuard.projectedCords))
+        propGuard.makePropGuard(app, propGuard.zDepth)
+        propGuard.makePropGuard(app, propGuard.zDepth+10)
+        propGuard.projectedCords = make2D(app, copy.deepcopy(propGuard.propGuardCords))
 
 runApp()
 
@@ -252,3 +291,88 @@ runApp()
         #     yDisp = self.propRadius*math.sin(math.radians(angle))
         #     self.propGuardCords.append((self.propCx+xDisp, self.propCy+yDisp, zDepth, 1))
         #     angle += 360/self.propGuardEdges
+
+
+### OLD CUBE DRAW:
+        # angle = 45
+        # while angle<=360:
+        #     xDisp = self.cubeSize*math.cos(math.radians(angle))
+        #     yDisp = self.cubeSize*math.cos(math.radians(angle))
+        #     self.projectedCords.append((self.droneCx+xDisp, self.droneCy+yDisp, zDepth, 1))
+        #     angle += 90
+
+### OLD DRONE 2D Draw:
+   # def make2D(self, app, projectedCords):
+    #     for i in range(len(self.projectedCords)):
+    #         projectAndRotateMatrix = numpy.matmul(app.projectionMatrix, makeXRotationMatrix(60))
+    #         #projectAndRotateMatrix = numpy.matmul(projectAndRotateMatrix, makeZRotationMatrix(self.tiltAngle))
+    #         projectAndRotateMatrix = numpy.matmul(projectAndRotateMatrix, makeYRotationMatrix(app.tiltAngleZ))
+    #         projectedCords[i] = numpy.matmul(projectAndRotateMatrix, self.projectedCords[i])
+    #     perspectiveFactor = None
+    #     for i in range(len(self.projectedCords)):
+    #             perspectiveFactor = self.projectedCords[i][3]
+    #             projectedCords[i][0] /= perspectiveFactor
+    #             projectedCords[i][1] /= perspectiveFactor
+    #     return projectedCords
+
+
+    #OLD PROP GUARD PROJECTION
+   # def make2D(self, app, projectedCords):
+    #     for i in range(len(self.propGuardCords)):
+    #         projectAndRotateMatrix = numpy.matmul(app.projectionMatrix, makeXRotationMatrix(60))
+    #         #projectAndRotateMatrix = numpy.matmul(projectAndRotateMatrix, makeZRotationMatrix(self.tiltAngle))
+    #         projectAndRotateMatrix = numpy.matmul(projectAndRotateMatrix, makeYRotationMatrix(app.tiltAngleY)) #THIS CONFUSING, FIX IT
+    #         projectedCords[i] = numpy.matmul(projectAndRotateMatrix, self.propGuardCords[i])
+    #     perspectiveFactor = None
+    #     for i in range(len(self.propGuardCords)):
+    #             perspectiveFactor = self.propGuardCords[i][3]
+    #             projectedCords[i][0] /= perspectiveFactor
+    #             projectedCords[i][1] /= perspectiveFactor
+    #     return projectedCords
+
+    # OLD PROP GUARD REPR
+    # def __repr__(self):
+    #     return f'{self.propCx}, {self.propCy}'
+
+      #     #draw2DPolygon(app, propGuard) 
+        # drawDroneCenter(app, app.avr)    
+    
+    #Code is my own, Gemini helped me brainstorm logic for connecting edges w/ mod
+    # def draw2DPolygon(app, self): 
+    #     numSide = self.propGuardEdges #shorter var name for easy typing
+    #     for i in range(numSide):
+    #         x1 = self.projectedCords[i][0] + app.avr.droneCx
+    #         y1 = self.projectedCords[i][1] + app.avr.droneCy
+    #         x2 = self.projectedCords[(i+1)%numSide][0] + app.avr.droneCx
+    #         y2 = self.projectedCords[(i+1)%numSide][1] + app.avr.droneCy
+    #         # % by sideLen so that index 3 connects to index 0
+    #         drawLine(x1, y1, x2, y2)
+    
+    #         x3 = self.projectedCords[i+numSide][0] + app.avr.droneCx
+    #         y3 = self.projectedCords[i+numSide][1]  + app.avr.droneCy
+    #         x4 = self.projectedCords[((i+1)%numSide)+numSide][0] + app.avr.droneCx
+    #         y4 = self.projectedCords[((i+1)%numSide)+numSide][1] + app.avr.droneCy
+    #         drawLine(x3, y3, x4, y4)
+    
+    #         #Connects the two faces together
+    #         drawLine(x1, y1, x3, y3)
+    
+    # def drawDroneCenter(app, self):
+    #     numSide = 4 #shorter var name for easy typing
+    #     for i in range(numSide):
+    #         x1 = self.projectedCords[i][0] #+ app.avr.droneCx
+    #         y1 = self.projectedCords[i][1] #+ app.avr.droneCy
+    #         x2 = self.projectedCords[(i+1)%numSide][0] #+ app.avr.droneCx
+    #         y2 = self.projectedCords[(i+1)%numSide][1] #+ app.avr.droneCy
+    #         # % by sideLen so that index 3 connects to index 0
+    #         drawLine(x1, y1, x2, y2)
+    
+    #         x3 = self.projectedCords[i+numSide][0] #+ app.avr.droneCx
+    #         y3 = self.projectedCords[i+numSide][1]  #+ app.avr.droneCy
+    #         x4 = self.projectedCords[((i+1)%numSide)+numSide][0] #+ app.avr.droneCx
+    #         y4 = self.projectedCords[((i+1)%numSide)+numSide][1] #+ app.avr.droneCy
+    #         drawLine(x3, y3, x4, y4)
+    
+    #         #Connects the two faces together
+    #         drawLine(x1, y1, x3, y3)
+    
