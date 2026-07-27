@@ -36,7 +36,6 @@ class PropGuard:
         self.propGuardCords = []
         self.makePropGuard(app, self.zDepth)
         self.makePropGuard(app, self.zDepth+10)
-        self.projectedCords = [0] * len(self.propGuardCords)
         self.projectedCords = self.make2D(app)
         
 
@@ -51,14 +50,14 @@ class PropGuard:
             yDisp = self.propRadius*math.sin(math.radians(angle))
             self.propGuardCords.append((self.propCx/2+xDisp, self.propCy/2+yDisp, zDepth, 1))
             angle += 360/self.propGuardEdges
-        #self.make2D(app)
 
     def make2D(self, app):
+        projectedCords = [0] * len(self.propGuardCords)
         for i in range(len(self.propGuardCords)):
             projectAndRotateMatrix = numpy.matmul(app.projectionMatrix, makeXRotationMatrix(20))
             projectAndRotateMatrix = numpy.matmul(projectAndRotateMatrix, makeYRotationMatrix(20))
             #print(projectAndRotateMatrix)
-            self.projectedCords[i] = numpy.matmul(projectAndRotateMatrix, self.propGuardCords[i])
+            projectedCords[i] = numpy.matmul(projectAndRotateMatrix, self.propGuardCords[i])
             # print(len(self.propGuardCords))
             # print(self.propGuardCords[i])
         perspectiveFactor = None
@@ -67,10 +66,11 @@ class PropGuard:
                 # flatX = self.projectedCords[i][0]/perspectiveFactor
                 # flatY = self.projectedCords[i][1]/perspectiveFactor
                 # print(self.propGuardCords[i])
-                self.projectedCords[i][0] /= perspectiveFactor
+                projectedCords[i][0] /= perspectiveFactor
                 # print(self.propGuardCords[i])
-                self.projectedCords[i][1] /= perspectiveFactor
-        return self.projectedCords
+                projectedCords[i][1] /= perspectiveFactor
+        print(projectedCords)
+        return projectedCords
 ###Projection Stuff:
 def makeXRotationMatrix(angle):
     cosVal = math.cos(math.radians(angle))
@@ -105,28 +105,30 @@ def onKeyHold(app, keys):
 def onStep(app):
     app.stepsTaken += 1
     for propGuard in app.propGuards:
-        propGuard.projectedCords = [0 * len(self.propGuardCords)]
+        propGuard.projectedCords = [0] * len(propGuard.propGuardCords)
         propGuard.makePropGuard(app, 2)
         propGuard.makePropGuard(app, 60)
-        if app.stepsTaken%100==0:
-            print(propGuard.propGuardCords)
+        # if app.stepsTaken%100==0:
+        #     print(propGuard.propGuardCords)
 
 def redrawAll(app):
     for propGuard in app.propGuards:    #gets each PropGuard instance from a list
         #print(app.stepsTaken, propGuard)
         draw2DPolygon(app, propGuard)     
 
-#Code is my own, Gemini helped me brainstorm for drawing the connecting edges
+#Code is my own, Gemini helped me brainstorm logic for connecting edges w/ mod
 def draw2DPolygon(app, self): 
     #Points
     #for propGuard in app.propGuards:    #gets each PropGuard instance from a list
-    for x,y,z,w in self.projectedCords:
-        drawCircle(x, y, 2)
+    
+    # for x,y,z,w in self.projectedCords:
+    #     drawCircle(x, y, 2)
 
-    # for i in range(len(app.propGuardCords)):
-    #         x = app.propGuardCords[i][0]
-    #         y = app.propGuardCords[i][1]
-    #         drawCircle(x, y, 1)
+    for i in range(len(self.projectedCords)):
+            print('projected:', self.projectedCords[i])
+            x = self.projectedCords[i][0]
+            y = self.projectedCords[i][0]
+            drawCircle(x, y, 1)
 
     #Edges
     numSide = self.propGuardEdges #shorter var name for easy typing
