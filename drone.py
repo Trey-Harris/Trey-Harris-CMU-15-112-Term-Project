@@ -15,10 +15,10 @@ def onAppStart(app):
             [0, 0, 1, 0],
             [0, 0, 1, 0]
     ]
-    propGuard1 = PropGuard(app, -100, -100, 6)
-    propGuard2 = PropGuard(app, 100, -100, 6)
-    propGuard3 = PropGuard(app, -100, 100, 2)
-    propGuard4 = PropGuard(app, 100, 100, 2)
+    propGuard1 = PropGuard(app, 45, 20)
+    propGuard2 = PropGuard(app, 135, 20)
+    propGuard3 = PropGuard(app, 225, 4)
+    propGuard4 = PropGuard(app, 315, 4)
     app.propGuards = [propGuard1, propGuard2, propGuard3, propGuard4]
 
 class Drone:
@@ -28,12 +28,16 @@ class Drone:
 
 #Easier to define as a class b/c there are 4 of them with very similar attributes.
 class PropGuard:
-    def __init__(self, app, xOffset, yOffset, zDepth):
-        self.xOffset, self.yOffset = xOffset, yOffset
+    def __init__(self, app, drawAngle, zDepth):
+        self.offsetRadius = 50
         self.zDepth = zDepth
-        self.propCx, self.propCy = app.droneCx+self.xOffset, app.droneCy+self.yOffset
+        self.drawAngle = drawAngle
+        self.tiltAngle = 0
         self.propRadius = 20
         self.propGuardEdges = 8
+        self.propCx = app.droneCx+(self.offsetRadius*math.cos(math.radians(self.tiltAngle)))
+        self.propCy = app.droneCy+(self.offsetRadius*math.sin(math.radians(self.tiltAngle)))
+        
         self.propGuardCords = []
         self.makePropGuard(app, self.zDepth)
         self.makePropGuard(app, self.zDepth+10)
@@ -44,19 +48,27 @@ class PropGuard:
         return f'{self.propCx}, {self.propCy}'
 
     def makePropGuard(self, app, zDepth):
-        self.propCx, self.propCy = app.droneCx+self.xOffset, app.droneCy+self.yOffset
+        #Recalculate centers b/c drone prop moved
+        # self.propCx = app.droneCx+(self.offsetRadius*math.cos(math.radians(self.tiltAngle)))
+        # self.propCy = app.droneCy+(self.offsetRadius*math.sin(math.radians(self.tiltAngle)))
+        tiltedAngle = self.drawAngle + self.tiltAngle
+        self.propCx = app.droneCx+(self.offsetRadius*math.cos(math.radians(tiltedAngle)))
+        self.propCy = app.droneCy+(self.offsetRadius*math.sin(math.radians(tiltedAngle)))
+
+        #This draws actual octagonal prisms w/ x/y disp from center
         angle = (360/self.propGuardEdges)/2    #top left vertex if think of like a stop sign
+        # angle += self.tiltAngle #tilts the octagon to match drone tilt
         while angle<360:
             xDisp = self.propRadius*math.cos(math.radians(angle))
             yDisp = self.propRadius*math.sin(math.radians(angle))
-            self.propGuardCords.append((self.propCx/2+xDisp, self.propCy/2+yDisp, zDepth, 1))
+            self.propGuardCords.append((self.propCx+xDisp, self.propCy+yDisp, zDepth, 1))
             angle += 360/self.propGuardEdges
 
     def make2D(self, app):
         projectedCords = copy.deepcopy(self.propGuardCords)
         for i in range(len(self.propGuardCords)):
-            projectAndRotateMatrix = numpy.matmul(app.projectionMatrix, makeXRotationMatrix(70))
-            projectAndRotateMatrix = numpy.matmul(projectAndRotateMatrix, makeYRotationMatrix(0))
+            projectAndRotateMatrix = numpy.matmul(app.projectionMatrix, makeXRotationMatrix(60))
+            projectAndRotateMatrix = numpy.matmul(projectAndRotateMatrix, makeZRotationMatrix(self.tiltAngle))
             projectedCords[i] = numpy.matmul(projectAndRotateMatrix, self.propGuardCords[i])
         perspectiveFactor = None
         for i in range(len(self.propGuardCords)):
@@ -76,16 +88,17 @@ def makeXRotationMatrix(angle):
         [0, 0, 0, 1]
     ]
 
-def makeYRotationMatrix(angle):
+def makeZRotationMatrix(angle):
     cosVal = math.cos(math.radians(angle))
     sinVal = math.sin(math.radians(angle))
     return [
-        [cosVal, 0, sinVal, 0],
-        [0, 1, 0, 0],
-        [-sinVal, 0, cosVal, 0],
+        [cosVal, -sinVal, 0, 0],
+        [sinVal, cosVal, 0, 0],
+        [0, 0, 1, 0],
         [0, 0, 0, 1]
     ]
 
+#CMU_Graphics
 def onKeyHold(app, keys):
     if 'left' in keys:
         app.droneCx -= 5
@@ -95,6 +108,10 @@ def onKeyHold(app, keys):
         app.droneCy -= 5
     if 'down' in keys:
         app.droneCy += 5
+    if 'd' in keys:
+        for propGuard in app.propGuards:
+            if propGuard.tiltAngle<=30:
+                propGuard.tiltAngle += 2
 
 def redrawAll(app):
     for propGuard in app.propGuards:    #gets each PropGuard instance from a list
