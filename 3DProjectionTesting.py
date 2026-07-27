@@ -5,6 +5,8 @@ import math
 def onAppStart(app):
     app.width = 1200
     app.height = 600
+    app.droneCx = app.width/2
+    app.droneCy = app.height/2
     app.propGuardCords = []
     app.propRadius = 20
     app.propGuardEdges = 8
@@ -34,7 +36,7 @@ def makePropGuard(app, zDepth):
     while angle<360:
         xDisp = app.propRadius*math.cos(math.radians(angle))
         yDisp = app.propRadius*math.sin(math.radians(angle))
-        app.propGuardCords.append((app.width/2+xDisp, app.height/2+yDisp,zDepth,1))
+        app.propGuardCords.append((app.droneCx/2+xDisp, app.droneCy/2+yDisp,zDepth,1))
         angle += 360/app.propGuardEdges
 
 def make2D(app):
@@ -74,6 +76,23 @@ def draw2DPolygon(app):
         drawLine(x3, y3, x4, y4)
 
         drawLine(x1, y1, x3, y3)
+
+def onKeyHold(app, keys):
+    if 'left' in keys:
+        app.droneCx -= 5
+    if 'right' in keys:
+        app.droneCx += 5
+    if 'up' in keys:
+        app.droneCy -= 5
+    if 'down' in keys:
+        app.droneCy += 5
+    print(app.droneCx, app.droneCy)
+
+def onStep(app):
+    app.propGuardCords = []
+    makePropGuard(app, 4)
+    makePropGuard(app, 10)
+    make2D(app)
 
 def redrawAll(app):
     for x,y,z,w in app.propGuardCords:
