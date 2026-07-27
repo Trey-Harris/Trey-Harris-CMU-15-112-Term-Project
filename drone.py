@@ -1,6 +1,7 @@
 from cmu_graphics import *
 import math
 import numpy
+import copy
 
 def onAppStart(app):
     app.width = 1200
@@ -52,25 +53,18 @@ class PropGuard:
             angle += 360/self.propGuardEdges
 
     def make2D(self, app):
-        projectedCords = [0] * len(self.propGuardCords)
+        projectedCords = copy.deepcopy(self.propGuardCords)
         for i in range(len(self.propGuardCords)):
-            projectAndRotateMatrix = numpy.matmul(app.projectionMatrix, makeXRotationMatrix(20))
-            projectAndRotateMatrix = numpy.matmul(projectAndRotateMatrix, makeYRotationMatrix(20))
-            #print(projectAndRotateMatrix)
+            projectAndRotateMatrix = numpy.matmul(app.projectionMatrix, makeXRotationMatrix(70))
+            projectAndRotateMatrix = numpy.matmul(projectAndRotateMatrix, makeYRotationMatrix(0))
             projectedCords[i] = numpy.matmul(projectAndRotateMatrix, self.propGuardCords[i])
-            # print(len(self.propGuardCords))
-            # print(self.propGuardCords[i])
         perspectiveFactor = None
         for i in range(len(self.propGuardCords)):
                 perspectiveFactor = self.propGuardCords[i][3]
-                # flatX = self.projectedCords[i][0]/perspectiveFactor
-                # flatY = self.projectedCords[i][1]/perspectiveFactor
-                # print(self.propGuardCords[i])
                 projectedCords[i][0] /= perspectiveFactor
-                # print(self.propGuardCords[i])
                 projectedCords[i][1] /= perspectiveFactor
-        print(projectedCords)
         return projectedCords
+    
 ###Projection Stuff:
 def makeXRotationMatrix(angle):
     cosVal = math.cos(math.radians(angle))
@@ -102,15 +96,6 @@ def onKeyHold(app, keys):
     if 'down' in keys:
         app.droneCy += 5
 
-def onStep(app):
-    app.stepsTaken += 1
-    for propGuard in app.propGuards:
-        propGuard.projectedCords = [0] * len(propGuard.propGuardCords)
-        propGuard.makePropGuard(app, 2)
-        propGuard.makePropGuard(app, 60)
-        # if app.stepsTaken%100==0:
-        #     print(propGuard.propGuardCords)
-
 def redrawAll(app):
     for propGuard in app.propGuards:    #gets each PropGuard instance from a list
         #print(app.stepsTaken, propGuard)
@@ -118,19 +103,6 @@ def redrawAll(app):
 
 #Code is my own, Gemini helped me brainstorm logic for connecting edges w/ mod
 def draw2DPolygon(app, self): 
-    #Points
-    #for propGuard in app.propGuards:    #gets each PropGuard instance from a list
-    
-    # for x,y,z,w in self.projectedCords:
-    #     drawCircle(x, y, 2)
-
-    for i in range(len(self.projectedCords)):
-            print('projected:', self.projectedCords[i])
-            x = self.projectedCords[i][0]
-            y = self.projectedCords[i][0]
-            drawCircle(x, y, 1)
-
-    #Edges
     numSide = self.propGuardEdges #shorter var name for easy typing
     for i in range(numSide):
         x1, y1 = self.projectedCords[i][0], self.projectedCords[i][1]
@@ -142,6 +114,16 @@ def draw2DPolygon(app, self):
         x4, y4 = self.projectedCords[((i+1)%numSide)+numSide][0], self.projectedCords[((i+1)%numSide)+numSide][1]
         drawLine(x3, y3, x4, y4)
 
+        #Connects the two faces together
         drawLine(x1, y1, x3, y3)
+
+def onStep(app):
+    app.stepsTaken += 1
+    for propGuard in app.propGuards:
+        propGuard.projectedCords = propGuard.propGuardCords #this too early
+        propGuard.propGuardCords = []
+        propGuard.makePropGuard(app, propGuard.zDepth)
+        propGuard.makePropGuard(app, propGuard.zDepth+10)
+        propGuard.projectedCords = propGuard.make2D(app)
 
 runApp()
