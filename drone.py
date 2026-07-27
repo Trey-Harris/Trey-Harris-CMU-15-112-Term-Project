@@ -1,6 +1,7 @@
 from cmu_graphics import *
-import math
+import pygame
 import numpy
+import math
 import copy
 
 def onAppStart(app):
@@ -13,15 +14,59 @@ def onAppStart(app):
             [0, 0, 1, 0],
             [0, 0, 1, 0]
     ]
+    #Controller vars
+    app.connectedController = False
+    app.controller = setupController(app)
+    app.leftRightAxis = 0
+    app.forwardBackwardAxis = 0
+    app.throttle = 0
+
+    #Drone vars
     app.forwardTiltAngle = 40
     app.sideTiltAngle = 0
     app.avr = Drone(app, 12)
+
+    #Prop guard vars
     propGuard1 = PropGuard(app, 45, 20)
     propGuard2 = PropGuard(app, 135, 20)
     propGuard3 = PropGuard(app, 225, 4)
     propGuard4 = PropGuard(app, 315, 4)
     app.propGuards = [propGuard1, propGuard2, propGuard3, propGuard4]
+    
+    # app.cx = app.width/2
+    # app.cy = app.height/2
 
+###I wrote both setupController(app) and updateController(app) myself, but I 
+###learned the methods from pygame documentation:
+###https://www.pygame.org/docs/ref/joystick.html#pygame.joystick.Joystick.init
+def setupController(app):
+    pygame.init()
+    pygame.joystick.init()  #initializes joystick MODULE, small part of pygame
+
+    if pygame.joystick.get_count() == 0:   #No controller connected
+            print('No controller connected, use arrow keys (W/S for throttle)')
+            return None
+    app.connectedController = True
+    controller = pygame.joystick.Joystick(0) #Create joystick instance for my controller
+    #controller.init()   #initialize my controller (No existe mas en python, no existe mas en mi code)
+    return controller
+
+
+def updateController(app, controller):
+    pygame.event.pump() #retrieves data from computer USB
+    app.leftRightAxis = -(controller.get_axis(0)) #negative to flip direction b/c data is input with right being negative which is confusing
+    app.forwardBackwardAxis = controller.get_axis(1) #forward/backward
+    app.throttle = (controller.get_axis(2))+0.8
+    #Need to add 0.8 to account for fact that 0 throttle on joystick is read as
+    #~-0.8 by computer
+    if app.throttle <= 0.1:
+        app.throttle = 0
+    #b/c there is a slight inaccuracy in controller reading, complete throttle
+    #down can be between -0.8 and -0.7, so I if my scaled throttle is less than
+    #0.1, I arbitrarily set it to 0 to prevent negative (or very small positive) throttle.
+    
+    print([app.leftRightAxis, app.forwardBackwardAxis, app.throttle])
+   
 
 def drawShape(radius, numEdges, dispX, dispY, zDepth):
     #This draws actual octagonal prisms w/ x/y disp from center (and cubes)
@@ -36,7 +81,6 @@ def drawShape(radius, numEdges, dispX, dispY, zDepth):
 
 def project(app, cords):
     projectedCords = []
-
     projectAndRotateMatrix = numpy.matmul(app.projectionMatrix, makeXRotationMatrix(app.forwardTiltAngle))
     projectAndRotateMatrix = numpy.matmul(projectAndRotateMatrix, makeYRotationMatrix(app.sideTiltAngle))
     for i in range(len(cords)):
@@ -138,45 +182,47 @@ def makeYRotationMatrix(angle):
 def onKeyHold(app, keys):
     #tilting forward and backward
     if 'w' in keys:
-        for propGuard in app.propGuards:
-            if app.forwardTiltAngle <= 60:
-                app.forwardTiltAngle += 0.5
+        if app.forwardTiltAngle <= 60:
+            app.forwardTiltAngle += 0.5
     if 's' in keys:
-        for propGuard in app.propGuards:
-            if app.forwardTiltAngle >= 20:
-                app.forwardTiltAngle -= 0.5
+        if app.forwardTiltAngle >= 20:
+            app.forwardTiltAngle -= 0.5
 
     #tilting left and right
-    if 'd' in keys:
-            for propGuard in app.propGuards:
-                if app.sideTiltAngle <= 45:
-                    app.sideTiltAngle += 0.5
+    if 'd' in keys:            
+        if app.sideTiltAngle <= 45:
+            app.sideTiltAngle += 0.5
     if 'a' in keys:
-            for propGuard in app.propGuards:
-                if app.sideTiltAngle >= -45:
-                    app.sideTiltAngle -= 0.5
-
-    if 'left' in keys:
-        if app.sideTiltAngle < 0:
-            app.avr.droneCx -= 1*abs(0-app.sideTiltAngle)
-    if 'right' in keys:
-        if app.sideTiltAngle > 0:
-            app.avr.droneCx += 1*abs(0-app.sideTiltAngle)
-    if 'up' in keys:
-        if app.forwardTiltAngle > 40:
-            app.avr.droneCy -= 0.5*abs(40-app.forwardTiltAngle)
-    if 'down' in keys:
-        if app.forwardTiltAngle < 40:
-            app.avr.droneCy += 0.5*abs(40-app.forwardTiltAngle)
-
+        if app.sideTiltAngle >= -45:
+            app.sideTiltAngle -= 0.5
 
 def redrawAll(app):
+    drawLabel('Use WASD for tilt if no controller connected', app.width/2, 50)
     for propGuard in app.propGuards:    #gets each PropGuard instance from a list
         #print(app.stepsTaken, propGuard)
         drawPrism(propGuard.propGuardEdges, propGuard.projectedCords, app.avr.droneCx, app.avr.droneCy)
     drawPrism(4, app.avr.projectedCubeCords, app.avr.droneCx, app.avr.droneCy)
 
 def onStep(app):
+    if app.connectedController:
+        updateController(app, app.controller)
+    app.sideTiltAngle += app.leftRightAxis
+    app.forwardTiltAngle += app.forwardBackwardAxis
+
+    if app.sideTiltAngle < 0:
+        app.avr.droneCx -= 1*abs(0-app.sideTiltAngle)
+
+    if app.sideTiltAngle > 0:
+        app.avr.droneCx += 1*abs(0-app.sideTiltAngle)
+
+    if app.forwardTiltAngle > 40:
+        app.avr.droneCy -= 0.5*abs(40-app.forwardTiltAngle)
+
+    if app.forwardTiltAngle < 40:
+        app.avr.droneCy += 0.5*abs(40-app.forwardTiltAngle)
+
+
+
     app.stepsTaken += 1
     for propGuard in app.propGuards:
         #propGuard.projectedCords = propGuard.propGuardCords #this too early
