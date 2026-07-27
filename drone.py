@@ -13,8 +13,8 @@ def onAppStart(app):
             [0, 0, 1, 0],
             [0, 0, 1, 0]
     ]
-    app.tiltAngleX = 45
-    app.tiltAngleY = 0
+    app.forwardTiltAngle = 40
+    app.sideTiltAngle = 0
     app.avr = Drone(app, 12)
     propGuard1 = PropGuard(app, 45, 20)
     propGuard2 = PropGuard(app, 135, 20)
@@ -37,8 +37,8 @@ def drawShape(radius, numEdges, dispX, dispY, zDepth):
 def project(app, cords):
     projectedCords = []
 
-    projectAndRotateMatrix = numpy.matmul(app.projectionMatrix, makeXRotationMatrix(app.tiltAngleX))
-    projectAndRotateMatrix = numpy.matmul(projectAndRotateMatrix, makeYRotationMatrix(app.tiltAngleY))
+    projectAndRotateMatrix = numpy.matmul(app.projectionMatrix, makeXRotationMatrix(app.forwardTiltAngle))
+    projectAndRotateMatrix = numpy.matmul(projectAndRotateMatrix, makeYRotationMatrix(app.sideTiltAngle))
     for i in range(len(cords)):
         projectedPoint = numpy.matmul(projectAndRotateMatrix, cords[i])
         perspectiveFactor = cords[i][3]
@@ -71,8 +71,8 @@ class Drone:
     def __init__(self, app, zDepth):
         self.cubeSize = 20
         self.zDepth = zDepth
-        self.droneCx = app.width/2+(self.cubeSize*math.cos(math.radians(app.tiltAngleY)))
-        self.droneCy = app.height/2+(self.cubeSize*math.sin(math.radians(app.tiltAngleY)))
+        self.droneCx = app.width/2+(self.cubeSize*math.cos(math.radians(app.sideTiltAngle)))
+        self.droneCy = app.height/2+(self.cubeSize*math.sin(math.radians(app.sideTiltAngle)))
         self.projectedCubeCords = []
         self.makeCenterCube(self.zDepth)
         self.makeCenterCube(self.zDepth+10)
@@ -90,8 +90,8 @@ class PropGuard:
         self.drawAngle = drawAngle
         self.propRadius = 20
         self.propGuardEdges = 8
-        self.propCx = app.avr.droneCx+(self.offsetRadius*math.cos(math.radians(app.tiltAngleY)))
-        self.propCy = app.avr.droneCy+(self.offsetRadius*math.sin(math.radians(app.tiltAngleY)))
+        self.propCx = app.avr.droneCx+(self.offsetRadius*math.cos(math.radians(app.sideTiltAngle)))
+        self.propCy = app.avr.droneCy+(self.offsetRadius*math.sin(math.radians(app.sideTiltAngle)))
         
         self.propGuardCords = []
         self.makePropGuard(app, self.zDepth)
@@ -136,34 +136,38 @@ def makeYRotationMatrix(angle):
 
 #cmu_graphics
 def onKeyHold(app, keys):
-    if 'left' in keys:
-        app.avr.droneCx -= 5
-    if 'right' in keys:
-        app.avr.droneCx += 5
-    if 'up' in keys:
-        app.avr.droneCy -= 5
-    if 'down' in keys:
-        app.avr.droneCy += 5
-
-    #w and s still need debugging
+    #tilting forward and backward
     if 'w' in keys:
         for propGuard in app.propGuards:
-            if app.tiltAngleX <= 60:
-                app.tiltAngleX += 2
+            if app.forwardTiltAngle <= 60:
+                app.forwardTiltAngle += 0.5
     if 's' in keys:
         for propGuard in app.propGuards:
-            if app.tiltAngleX >= 0:
-                app.tiltAngleX -= 2
+            if app.forwardTiltAngle >= 20:
+                app.forwardTiltAngle -= 0.5
 
     #tilting left and right
     if 'd' in keys:
             for propGuard in app.propGuards:
-                if app.tiltAngleY <= 45:
-                    app.tiltAngleY += 2
+                if app.sideTiltAngle <= 45:
+                    app.sideTiltAngle += 0.5
     if 'a' in keys:
             for propGuard in app.propGuards:
-                if app.tiltAngleY >= -45:
-                    app.tiltAngleY -= 2
+                if app.sideTiltAngle >= -45:
+                    app.sideTiltAngle -= 0.5
+
+    if 'left' in keys:
+        if app.sideTiltAngle < 0:
+            app.avr.droneCx -= 1*abs(0-app.sideTiltAngle)
+    if 'right' in keys:
+        if app.sideTiltAngle > 0:
+            app.avr.droneCx += 1*abs(0-app.sideTiltAngle)
+    if 'up' in keys:
+        if app.forwardTiltAngle > 40:
+            app.avr.droneCy -= 0.5*abs(40-app.forwardTiltAngle)
+    if 'down' in keys:
+        if app.forwardTiltAngle < 40:
+            app.avr.droneCy += 0.5*abs(40-app.forwardTiltAngle)
 
 
 def redrawAll(app):
@@ -180,19 +184,10 @@ def onStep(app):
         propGuard.makePropGuard(app, propGuard.zDepth)
         propGuard.makePropGuard(app, propGuard.zDepth+10)
         propGuard.projectedCords = project(app, copy.deepcopy(propGuard.propGuardCords))
-
-
-    #    self.projectedCubeCords = []
-    #            self.makeCenterCube(self.zDepth)
-    #            self.makeCenterCube(self.zDepth+10)
-    #            self.projectedCubeCords = project(app, copy.deepcopy(self.projectedCubeCords))
-       
-    #        def makeCenterCube(self, zDepth):
-    #            self.projectedCubeCords.extend(drawShape(self.cubeSize, 4, 0, 0, zDepth))
         
-        app.avr.projectedCubeCords = []
-        app.avr.makeCenterCube(app.avr.zDepth)
-        app.avr.makeCenterCube(app.avr.zDepth+10)
-        app.avr.projectedCubeCords = project(app, copy.deepcopy(app.avr.projectedCubeCords))
+    app.avr.projectedCubeCords = []
+    app.avr.makeCenterCube(app.avr.zDepth)
+    app.avr.makeCenterCube(app.avr.zDepth+10)
+    app.avr.projectedCubeCords = project(app, copy.deepcopy(app.avr.projectedCubeCords))
 
 runApp()
