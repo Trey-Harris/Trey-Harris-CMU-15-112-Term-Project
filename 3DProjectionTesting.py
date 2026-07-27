@@ -7,7 +7,6 @@ def onAppStart(app):
     app.height = 600
     app.droneCx = app.width/2
     app.droneCy = app.height/2
-    app.propGuardCords = []
     app.propRadius = 20
     app.propGuardEdges = 8
     app.propGuardCords = []
@@ -31,6 +30,16 @@ def makeXRotationMatrix(angle):
         [0, 0, 0, 1]
     ]
 
+def makeYRotationMatrix(angle):
+    cosVal = math.cos(math.radians(angle))
+    sinVal = math.sin(math.radians(angle))
+    return [
+        [cosVal, 0, sinVal, 0],
+        [0, 1, 0, 0],
+        [-sinVal, 0, cosVal, 0],
+        [0, 0, 0, 1]
+    ]
+
 def makePropGuard(app, zDepth):
     angle = (360/app.propGuardEdges)/2    #top left vertex if think of like a stop sign
     while angle<360:
@@ -43,6 +52,7 @@ def make2D(app):
     projectedCords = []
     for i in range(len(app.propGuardCords)):
         projectAndRotateMatrix = numpy.matmul(app.projectionMatrix, makeXRotationMatrix(40))
+        projectAndRotateMatrix = numpy.matmul(projectAndRotateMatrix, makeYRotationMatrix(40))
         app.propGuardCords[i] = numpy.matmul(projectAndRotateMatrix, app.propGuardCords[i])
         #print(app.propGuardCords)
         # app.propGuardCords[i] = numpy.matmul(app.projectionMatrix, app.propGuardCords[i])
@@ -55,7 +65,7 @@ def make2D(app):
             app.propGuardCords[i][0] += flatX
             app.propGuardCords[i][1] += flatY
 
-#Code is my own, Gemini helped me brainstorm the algorithm
+#Code is my own, Gemini helped me brainstorm for drawing the connecting edges
 def draw2DPolygon(app): 
     #Points
     for i in range(len(app.propGuardCords)):
