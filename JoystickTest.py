@@ -1,11 +1,3 @@
-'''
-Preliminary Code [12 pts]: You should have a start on your code. 
-This code may be prototype code, and so perhaps may not be part 
-of your final project. It may or may not have any user interface.
-Regardless, there still should be some code. 
-You do not need to submit your code anywhere, but do make sure to 
-commit your work before the deadline if you are not working in CS Academy.
-'''
 import pygame #ONLY USED FOR JOYSTICK CONTROL, everything else is CMU Graphics
 from cmu_graphics import *
 
