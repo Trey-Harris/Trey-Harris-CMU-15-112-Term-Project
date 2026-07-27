@@ -6,7 +6,7 @@ def onAppStart(app):
     app.width = 1200
     app.height = 600
     app.propGuardCords = []
-    app.propRadius = 200
+    app.propRadius = 20
     app.propGuardEdges = 8
     app.propGuardCords = []
     app.projectionMatrix = [
@@ -15,19 +15,19 @@ def onAppStart(app):
             [0, 0, 1, 0],
             [0, 0, 1, 0]
     ]
-    makePropGuard(app, 40)
-    makePropGuard(app, 1000)
+    makePropGuard(app, 4)
+    makePropGuard(app, 10)
     make2D(app)
 
-# def makeXRotationMatrix(angle):
-#     cosVal = math.cos(math.radians(angle))
-#     sinVal = math.sin(math.radians(angle))
-#     return [
-#         [1, 0, 0, 0],
-#         [0, cosVal, -sinVal, 0],
-#         [0, sinVal, cosVal, 0],
-#         [0, 0, 0, 1]
-#     ]
+def makeXRotationMatrix(angle):
+    cosVal = math.cos(math.radians(angle))
+    sinVal = math.sin(math.radians(angle))
+    return [
+        [1, 0, 0, 0],
+        [0, cosVal, -sinVal, 0],
+        [0, sinVal, cosVal, 0],
+        [0, 0, 0, 1]
+    ]
 
 def makePropGuard(app, zDepth):
     angle = (360/app.propGuardEdges)/2    #top left vertex if think of like a stop sign
@@ -40,10 +40,11 @@ def makePropGuard(app, zDepth):
 def make2D(app):
     projectedCords = []
     for i in range(len(app.propGuardCords)):
-        # projectAndRotateMatrix = numpy.matmul(app.projectionMatrix, makeXRotationMatrix(150))
-        # projectedCords.append(numpy.matmul(projectAndRotateMatrix, cords))
-        app.propGuardCords[i] = numpy.matmul(app.projectionMatrix, app.propGuardCords[i])
-        
+        projectAndRotateMatrix = numpy.matmul(app.projectionMatrix, makeXRotationMatrix(40))
+        app.propGuardCords[i] = numpy.matmul(projectAndRotateMatrix, app.propGuardCords[i])
+        #print(app.propGuardCords)
+        # app.propGuardCords[i] = numpy.matmul(app.projectionMatrix, app.propGuardCords[i])
+    print(projectAndRotateMatrix) 
     perspectiveFactor = None
     for i in range(len(app.propGuardCords)):
             perspectiveFactor = app.propGuardCords[i][3]
