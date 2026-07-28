@@ -221,8 +221,8 @@ def onStep(app):
     for propGuard in app.propGuards:
         #propGuard.projectedCords = propGuard.propGuardCords #this too early
         propGuard.propGuardCords = []
-        propGuard.makePropGuard(app, propGuard.zDepth)
-        propGuard.makePropGuard(app, propGuard.zDepth+10)
+        propGuard.makePropGuard(propGuard.zDepth)
+        propGuard.makePropGuard(propGuard.zDepth+10)
         propGuard.projectedCords = project(app, copy.deepcopy(propGuard.propGuardCords))
         
     app.avr.projectedCubeCords = []
