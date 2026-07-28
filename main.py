@@ -53,7 +53,6 @@ def onKeyHold(app, keys):
             app.sideTiltAngle -= 0.5
 
 def redrawAll(app):
-    print('hi')
     drawLabel('Use WASD for tilt if no controller connected', app.width/2, 50)
     for propGuard in app.propGuards:    #gets each PropGuard instance from a list
         #print(app.stepsTaken, propGuard)

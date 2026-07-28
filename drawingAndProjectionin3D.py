@@ -2,7 +2,7 @@
 import numpy
 import math
 
-def drawShape(radius, numEdges, dispX, dispY, zDepth):
+def makeShape(radius, numEdges, dispX, dispY, zDepth):
     #This draws actual octagonal prisms w/ x/y disp from center (and cubes)
     shapeCords = []
     angle = (360/numEdges)/2    #top right vertex if think of like a stop sign
@@ -18,7 +18,6 @@ def drawShape(radius, numEdges, dispX, dispY, zDepth):
 #Pointed out that I was dividing by my projected z instead of my unprojected z
 #Citation: Learned about numpy.matmul() fron numpy documentation:
 #https://numpy.org/devdocs/reference/generated/numpy.matmul.html#numpy.matmul
-
 def project(app, cords):
     projectedCords = []
     projectAndRotateMatrix = numpy.matmul(app.projectionMatrix, makeXRotationMatrix(app.forwardTiltAngle))
