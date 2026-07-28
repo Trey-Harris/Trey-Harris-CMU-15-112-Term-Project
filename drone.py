@@ -7,10 +7,11 @@ class Drone:
     def __init__(self, app, zDepth):
         self.cubeSize = 20
         self.zDepth = zDepth
+        #REMOVE THE TRIG
         self.droneCx = app.width/2+(self.cubeSize*math.cos(math.radians(app.sideTiltAngle)))
         self.droneCy = app.height/2+(self.cubeSize*math.sin(math.radians(app.sideTiltAngle)))
         self.projectedCubeCords = []
-        self.makeCenterCube(self.zDepth)
+        self.makeCenterCube(self.zDepth) #probably don't need a function for this.
         self.makeCenterCube(self.zDepth+10)
         self.projectedCubeCords = project(app, copy.deepcopy(self.projectedCubeCords))
 
@@ -19,6 +20,7 @@ class Drone:
 
  
 #Easier to define as a class b/c there are 4 of them with very similar attributes.
+#(instead of making part of one huge Drone class)
 class PropGuard:
     def __init__(self, app, drawAngle, zDepth):
         self.offsetRadius = 50

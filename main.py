@@ -7,13 +7,16 @@ import copy
 from cmu_graphics import *
 
 def onAppStart(app):
+    app.width = 1200
+    app.height = 600
     app.stepsTaken = 0
+    #THIS NEEDS TO BE MOVED AND CITED FROM ERIC
     app.projectionMatrix = [
             [1, 0, 0, 0],
             [0, 1, 0, 0],
             [0, 0, 1, 0],
             [0, 0, 1, 0]
-    ]
+    ] #Can multiply by itendity matrix (+ translations in w) to make translations later if need to
     #Controller vars
     app.connectedController = False
     app.controller = setupController(app)
@@ -24,10 +27,10 @@ def onAppStart(app):
     #Drone vars
     app.forwardTiltAngle = 40
     app.sideTiltAngle = 0
-    app.avr = Drone(app, 12)
+    app.avr = Drone(app, 12)   #12 is the zDepth
 
  #Prop guard vars
-    propGuard1 = PropGuard(app, 45, 20)
+    propGuard1 = PropGuard(app, 45, 20) #make these be relative to the drone
     propGuard2 = PropGuard(app, 135, 20)
     propGuard3 = PropGuard(app, 225, 4)
     propGuard4 = PropGuard(app, 315, 4)
@@ -111,7 +114,7 @@ def onStep(app):
     app.forwardTiltAngle += app.forwardBackwardAxis
 
     if app.sideTiltAngle < 0:
-        app.avr.droneCx -= 1*abs(0-app.sideTiltAngle)
+        app.avr.droneCx -= 1*abs(0-app.sideTiltAngle)   #getRid of these 1s (and 0s)
 
     if app.sideTiltAngle > 0:
         app.avr.droneCx += 1*abs(0-app.sideTiltAngle)
@@ -133,6 +136,7 @@ def onStep(app):
         if container.isConnected == True:
             container.connectContainer(app.avr)
 
+    #MAKE THE FOLLOWING THEIR OWN FUNCTIONS B/C REPEATED
     app.stepsTaken += 1
     for propGuard in app.propGuards:
         propGuard.propGuardCords = []
@@ -145,4 +149,4 @@ def onStep(app):
     app.avr.makeCenterCube(app.avr.zDepth+10)
     app.avr.projectedCubeCords = project(app, copy.deepcopy(app.avr.projectedCubeCords))
 
-runApp(width=1200, height=600)
+runApp()

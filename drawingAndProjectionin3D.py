@@ -6,7 +6,7 @@ def makeShape(radius, numEdges, dispX, dispY, zDepth):
     #This draws actual octagonal prisms w/ x/y disp from center (and cubes)
     shapeCords = []
     angle = (360/numEdges)/2    #top right vertex if think of like a stop sign
-    while angle<360:
+    while angle<=360:
         dx = radius*math.cos(math.radians(angle))
         dy = radius*math.sin(math.radians(angle))
         shapeCords.append([dx + dispX, dy + dispY, zDepth, 1])
