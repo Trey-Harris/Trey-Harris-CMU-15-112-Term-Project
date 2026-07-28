@@ -1,4 +1,5 @@
 from cmu_graphics import *
+from main import *
 import numpy
 import math
 
