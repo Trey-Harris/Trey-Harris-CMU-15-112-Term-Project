@@ -76,9 +76,12 @@ def drawShape(radius, numEdges, dispX, dispY, zDepth):
         angle += 360/numEdges
     return shapeCords
 
-#Citation: Gemini helped me debug. Found an aliasing issue when this used to be
-#a mutating function and pointed out that I was dividing by my projected z
-#instead of my unprojected z (which was horribly distorting everything)
+#Citation: Gemini helped me debug. 
+#Found an aliasing issue when this used to be a mutating function
+#Pointed out that I was dividing by my projected z instead of my unprojected z
+#Citation: Learned about numpy.matmul() fron numpy documentation:
+#https://numpy.org/devdocs/reference/generated/numpy.matmul.html#numpy.matmul
+
 def project(app, cords):
     projectedCords = []
     projectAndRotateMatrix = numpy.matmul(app.projectionMatrix, makeXRotationMatrix(app.forwardTiltAngle))
@@ -140,16 +143,16 @@ class PropGuard:
         self.propCy = app.avr.droneCy+(self.offsetRadius*math.sin(math.radians(app.sideTiltAngle)))
         
         self.propGuardCords = []
-        self.makePropGuard(app, self.zDepth)
-        self.makePropGuard(app, self.zDepth+10)
+        self.makePropGuard(self.zDepth)
+        self.makePropGuard(self.zDepth+10)
         self.projectedCords = project(app, copy.deepcopy(self.propGuardCords))
 
-    def makePropGuard(self, app, zDepth):
+    def makePropGuard(self, zDepth):
         self.propCx = (self.offsetRadius*math.cos(math.radians(self.drawAngle)))
         self.propCy = (self.offsetRadius*math.sin(math.radians(self.drawAngle)))
         self.propGuardCords.extend(drawShape(self.propRadius, self.propGuardEdges, self.propCx, self.propCy, zDepth))
 
-###Projection Stuff:
+###Projection Matricies: Learned the style of matrix from Eric, Googled the actual ones
 def makeXRotationMatrix(angle):
     cosVal = math.cos(math.radians(angle))
     sinVal = math.sin(math.radians(angle))
