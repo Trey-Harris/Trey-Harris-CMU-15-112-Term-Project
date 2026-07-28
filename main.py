@@ -40,6 +40,13 @@ def onAppStart(app):
     app.container1 = Container(550, 550)
     app.containers = [app.container1]
    
+def onKeyPress(app, key):
+    if key == 't':
+        print('hi')
+        #for container in app.containers:
+        app.container1.isConnected = False
+        app.container1.isFalling = True
+        app.container1.fallingContainer(app)
 
 def onKeyHold(app, keys):
     #tilting forward and backward
@@ -96,6 +103,7 @@ def drawPrism(numSides, cords, cx, cy):
         drawLine(x1, y1, x3, y3)
 
 def onStep(app):
+    print(app.container1.isConnected)
     if app.connectedController:
         updateController(app, app.controller)
 
@@ -114,16 +122,16 @@ def onStep(app):
     if app.forwardTiltAngle < 40:
         app.avr.droneCy += 0.5*abs(40-app.forwardTiltAngle)
 
-    #check connection:
-    print(app.avr.droneCx, app.avr.droneCy)
+    #check container connection:
     for container in app.containers:
-        if  container.containerCy <= app.avr.droneCy + app.avr.cubeSize: #container.containerCx <= app.avr.droneCx+app.avr.cubeSize or
+        if container.isFalling:
+            container.fallingContainer(app)
+
+        if  container.containerCy <= app.avr.droneCy + app.avr.cubeSize:
             container.connectContainer(app.avr)
-            print('hi')
+
         if container.isConnected == True:
             container.connectContainer(app.avr)
-    
-
 
     app.stepsTaken += 1
     for propGuard in app.propGuards:
