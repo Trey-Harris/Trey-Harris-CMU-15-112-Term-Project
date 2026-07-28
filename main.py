@@ -1,6 +1,7 @@
-from drone import *
 from field import *
 from controller import *
+from drone import *
+from container import *
 from drawingAndProjectionin3D import *
 import copy
 from cmu_graphics import *
@@ -25,15 +26,20 @@ def onAppStart(app):
     app.sideTiltAngle = 0
     app.avr = Drone(app, 12)
 
-    #Field Vars
-    app.field = Field(app)
-
-    #Prop guard vars
+ #Prop guard vars
     propGuard1 = PropGuard(app, 45, 20)
     propGuard2 = PropGuard(app, 135, 20)
     propGuard3 = PropGuard(app, 225, 4)
     propGuard4 = PropGuard(app, 315, 4)
     app.propGuards = [propGuard1, propGuard2, propGuard3, propGuard4]
+
+    #Field Vars
+    app.field = Field(app)
+
+    #Container Vars
+    app.container1 = Container(550, 550)
+    app.containers = [app.container1]
+   
 
 def onKeyHold(app, keys):
     #tilting forward and backward
@@ -54,11 +60,19 @@ def onKeyHold(app, keys):
 
 def redrawAll(app):
     drawLabel('Use WASD for tilt if no controller connected', app.width/2, 50)
+
+    #Field
+    drawPrism(4, app.field.projectedFieldCords, app.width/2, app.height/2)
+
+    #Container
+    drawRect(app.container1.containerCx, app.container1.containerCy, 
+             app.container1.containerWidth, app.container1.containerHeight, 
+             align='center', fill=None, border='red')
+
     for propGuard in app.propGuards:    #gets each PropGuard instance from a list
-        #print(app.stepsTaken, propGuard)
         drawPrism(propGuard.propGuardEdges, propGuard.projectedCords, app.avr.droneCx, app.avr.droneCy)
+    #Drone center
     drawPrism(4, app.avr.projectedCubeCords, app.avr.droneCx, app.avr.droneCy)
-    drawPrism(4, app.field.projectedFieldCords, app.width/2, app.height/2) #TEST
 
 #Citation: Gemini helped with completing the shape (suggested to use % to 
 #connect index 7 with index 0)
@@ -84,6 +98,7 @@ def drawPrism(numSides, cords, cx, cy):
 def onStep(app):
     if app.connectedController:
         updateController(app, app.controller)
+
     app.sideTiltAngle += app.leftRightAxis
     app.forwardTiltAngle += app.forwardBackwardAxis
 
@@ -98,6 +113,16 @@ def onStep(app):
 
     if app.forwardTiltAngle < 40:
         app.avr.droneCy += 0.5*abs(40-app.forwardTiltAngle)
+
+    #check connection:
+    print(app.avr.droneCx, app.avr.droneCy)
+    for container in app.containers:
+        if  container.containerCy <= app.avr.droneCy + app.avr.cubeSize: #container.containerCx <= app.avr.droneCx+app.avr.cubeSize or
+            container.connectContainer(app.avr)
+            print('hi')
+        if container.isConnected == True:
+            container.connectContainer(app.avr)
+    
 
 
     app.stepsTaken += 1
