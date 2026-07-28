@@ -1,4 +1,3 @@
-from cmu_graphics import *
 from drawingAndProjectionin3D import *
 import math
 import copy

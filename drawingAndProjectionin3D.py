@@ -1,5 +1,4 @@
-from cmu_graphics import *
-from main import *
+#from main import *
 import numpy
 import math
 
@@ -31,27 +30,6 @@ def project(app, cords):
         projectedPoint[1] /= perspectiveFactor
         projectedCords.append(projectedPoint)
     return projectedCords
-
-#Citation: Gemini helped with completing the shape (suggested to use % to 
-#connect index 7 with index 0)
-def drawPrism(numSides, cords, cx, cy):
-    for i in range(numSides):
-        x1 = cords[i][0] + cx
-        y1 = cords[i][1] + cy
-        x2 = cords[(i+1)%numSides][0] + cx
-        y2 = cords[(i+1)%numSides][1] + cy
-        # % by numSides so that the last index connects to index 0
-        drawLine(x1, y1, x2, y2)
-
-        #Draws bottom half of 3D shape
-        x3 = cords[i+numSides][0] + cx
-        y3 = cords[i+numSides][1] + cy
-        x4 = cords[((i+1)%numSides)+numSides][0] + cx
-        y4 = cords[((i+1)%numSides)+numSides][1] + cy
-        drawLine(x3, y3, x4, y4)
-
-        # Connects the two faces together
-        drawLine(x1, y1, x3, y3)
 
 ###Projection Matricies: Learned the style of matrix from Eric, Googled the actual ones
 def makeXRotationMatrix(angle):

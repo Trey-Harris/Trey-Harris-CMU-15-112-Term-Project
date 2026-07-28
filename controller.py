@@ -1,5 +1,5 @@
-from cmu_graphics import *
 import pygame
+
 ###I wrote both setupController(app) and updateController(app) myself, but I 
 ###learned the methods from pygame documentation:
 ###https://www.pygame.org/docs/ref/joystick.html#pygame.joystick.Joystick.init
@@ -8,7 +8,7 @@ def setupController(app):
     pygame.joystick.init()  #initializes joystick MODULE, small part of pygame
 
     if pygame.joystick.get_count() == 0:   #No controller connected
-            print('No controller connected, use arrow keys (W/S for throttle)')
+            print('No controller connected, use WASD for tilt')
             return None
     app.connectedController = True
     controller = pygame.joystick.Joystick(0) #Create joystick instance for my controller
