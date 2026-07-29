@@ -18,18 +18,20 @@ def makeShape(radius, numEdges, dispX, dispY, zDepth):
 #Pointed out that I was dividing by my projected z instead of my unprojected z
 #Citation: Learned about numpy.matmul() fron numpy documentation:
 #https://numpy.org/devdocs/reference/generated/numpy.matmul.html#numpy.matmul
-def project(app, cords):
+def project(cords, xAngle, zAngle):
     projectedCords = []
-    transformedMatrix = numpy.matmul(makeProjectionMatrix(), makeXRotationMatrix(app.forwardTiltAngle))
-    transformedMatrix = numpy.matmul(transformedMatrix, makeZRotationMatrix(app.sideTiltAngle))
+    #transformedMatrix = numpy.matmul(makeProjectionMatrix(), makeXRotationMatrix(xAngle))
+    transformedMatrix = numpy.matmul(makeXRotationMatrix(xAngle), makeZRotationMatrix(zAngle))
     for i in range(len(cords)):
         projectedPoint = numpy.matmul(transformedMatrix, cords[i])
         projectedCords.append(projectedPoint)
     return projectedCords
 
-def makeTranslation(matrix, dx, dy, dz):
-    numpy.matmul(matrix, makeTranslationMatrix(dx, dy, dz))
-
+def makeTranslation(cords, dx, dy, dz):
+    res = []
+    for i in range(len(cords)):
+        res.append(numpy.matmul(cords[i], makeTranslationMatrix(dx, dy, dz)))
+    return res
 
 
 

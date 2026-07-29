@@ -18,10 +18,18 @@ def onAppStart(app):
     app.forwardBackwardAxis = 0
     app.throttle = 0
 
+    #CLAUDE
+    app.camera = ChaseCamera()
+
     #Drone vars
-    app.forwardTiltAngle = 40
-    app.sideTiltAngle = 0
+    # app.avr.pitch = 40
+    # app.avr.roll = 0
     app.avr = Drone(app, 12)   #12 is the zDepth
+
+    #START CLAUDE (EXEMPT):
+    app.field  = Field()
+    app.avr.droneX, app.avr.droneY, app.avr.droneZ = app.field.startPosition()
+    #END CLAUDE
 
  #Prop guard vars
     propGuard1 = PropGuard(app, 45, 20) #make these be relative to the drone
@@ -30,18 +38,10 @@ def onAppStart(app):
     propGuard4 = PropGuard(app, 315, 4)
     app.propGuards = [propGuard1, propGuard2, propGuard3, propGuard4]
 
-    #Field Vars
-    app.field = Field()
-
     #Container Vars
     app.container1 = Container(400, 500, 0, 100, 10, 40)
     app.containers = [app.container1]
 
-    #CLAUDE:
-    app.field  = Field()
-    app.camera = ChaseCamera()
-    app.droneX, app.droneY, app.droneZ = 0, -150, -900   # world; y is negative-up
-    app.droneX, app.droneY, app.droneZ = app.field.startPosition()
    
 def onKeyPress(app, key):
     if key == 't':
@@ -54,25 +54,25 @@ def onKeyPress(app, key):
 def onKeyHold(app, keys):
     #Next 4 lines Claude
     if 'up' in keys:
-        app.droneY -= 4        # y is negative-up, so this climbs
+        app.avr.droneY -= 4        # y is negative-up, so this climbs
     if 'down' in keys:
-        app.droneY += 4
+        app.avr.droneY += 4
 
     #tilting forward and backward
     if 'w' in keys:
-        if app.forwardTiltAngle <= 60:
-            app.forwardTiltAngle += 0.5
+        #if app.avr.pitch <= 60:
+        app.avr.pitch += 0.5
     if 's' in keys:
-        if app.forwardTiltAngle >= 20:
-            app.forwardTiltAngle -= 0.5
+        #if app.avr.pitch >= 20:
+        app.avr.pitch -= 0.5
 
     #tilting left and right
     if 'd' in keys:            
-        if app.sideTiltAngle <= 45:
-            app.sideTiltAngle += 0.5
+        if app.avr.roll <= 45:
+            app.avr.roll += 0.5
     if 'a' in keys:
-        if app.sideTiltAngle >= -45:
-            app.sideTiltAngle -= 0.5
+        if app.avr.roll >= -45:
+            app.avr.roll -= 0.5
 
 def redrawAll(app):
     drawLabel('Use WASD for tilt if no controller connected', app.width/2, 50)
@@ -86,9 +86,9 @@ def redrawAll(app):
     #          align='center', fill=None, border='red')
 
     for propGuard in app.propGuards:    #gets each PropGuard instance from a list
-        drawPrism(propGuard.propGuardEdges, propGuard.projectedCords, app.avr.droneCx, app.avr.droneCy)
+        drawPrism(propGuard.propGuardEdges, propGuard.projectedCords, app.avr.screenX, app.avr.screenY)
     #Drone center
-    drawPrism(4, app.avr.projectedCubeCords, app.avr.droneCx, app.avr.droneCy)
+    drawPrism(4, app.avr.projectedCubeCords, app.avr.screenX, app.avr.screenY)
 
 #Citation: Gemini helped with completing the shape (suggested to use % to 
 #connect index 7 with index 0)
@@ -112,24 +112,24 @@ def drawPrism(numSides, cords, cx, cy):
         drawLine(x1, y1, x3, y3)
 
 def onStep(app):
-    print(app.container1.isConnected)
+    # print(app.container1.isConnected)
     if app.connectedController:
         updateController(app, app.controller)
 
-    app.sideTiltAngle += app.leftRightAxis
-    app.forwardTiltAngle += app.forwardBackwardAxis
+    app.avr.roll += app.leftRightAxis
+    app.avr.pitch += app.forwardBackwardAxis
 
     #START CLAUDE (EXEMPTED CODE)
-    app.droneZ += (app.forwardTiltAngle - 40) * 0.5   # 40 is your neutral
-    app.droneX += app.sideTiltAngle * 0.3
+    app.avr.droneZ += (app.avr.pitch-60) * 0.5   # 60 is your neutral
+    app.avr.droneX += app.avr.roll * 0.3
 
-    app.droneX, app.droneY, app.droneZ = app.field.clampToArena(
-        app.droneX, app.droneY, app.droneZ, 60)
+    app.avr.droneX, app.avr.droneY, app.avr.droneZ = app.field.clampToArena(
+        app.avr.droneX, app.avr.droneY, app.avr.droneZ, 60)
     
-    app.camera.follow(app.droneX, app.droneY, app.droneZ)
+    app.camera.follow(app.avr.droneX, app.avr.droneY, app.avr.droneZ)
 
-    app.avr.droneCx, app.avr.droneCy = app.camera.worldToScreen(
-        app.droneX, app.droneY, app.droneZ, app.width/2, app.height/2)
+    app.avr.screenX, app.avr.screenY = app.camera.worldToScreen(
+        app.avr.droneX, app.avr.droneY, app.avr.droneZ, app.width/2, app.height/2)
     #END CLAUDE (ALL CODE BELOW IS MY OWN)
 
     #check container connection: THIS CODE BREAKS EVERYTHING, REWRITE!!!
@@ -149,11 +149,12 @@ def onStep(app):
         propGuard.propGuardCords = []
         propGuard.makePropGuard(propGuard.zDepth)
         propGuard.makePropGuard(propGuard.zDepth+10)
-        propGuard.projectedCords = project(app, copy.deepcopy(propGuard.propGuardCords))
-        
+        propGuard.projectedCords = project(copy.deepcopy(propGuard.propGuardCords), app.avr.pitch, app.avr.roll)
+  
     app.avr.projectedCubeCords = []
-    app.avr.makeCenterCube(app.avr.zDepth)
-    app.avr.makeCenterCube(app.avr.zDepth+10)
-    app.avr.projectedCubeCords = project(app, copy.deepcopy(app.avr.projectedCubeCords))
+    app.avr.projectedCubeCords = app.avr.computeCube(app)
+    # app.avr.makeCenterCube(app.avr.zDepth)
+    # app.avr.makeCenterCube(app.avr.zDepth+10)
+    # app.avr.projectedCubeCords = project(copy.deepcopy(app.avr.projectedCubeCords), app.avr.roll, app.avr.pitch)
 
 runApp()
