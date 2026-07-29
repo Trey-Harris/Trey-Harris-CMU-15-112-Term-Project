@@ -28,8 +28,9 @@ def onAppStart(app):
 
     #START CLAUDE (EXEMPT):
     app.field = Field()
-    app.field.addContainer(Container(-800, -700, 0, -40, -25, 25)) 
-    #def __init__(self, leftX, rightX, bottomY, topY, closeZ, farZ, color='saddleBrown'):
+    app.field.addContainer(Container(700, 800, 0, -40, 275, 325)) 
+    app.field.addContainer(Container(300, 400, 0, -40, 275, 325))
+    app.field.addContainer(Container(400, 500, 0, -40, -25, 25))
 
     app.avr.droneX, app.avr.droneY, app.avr.droneZ = app.field.startPosition()
 

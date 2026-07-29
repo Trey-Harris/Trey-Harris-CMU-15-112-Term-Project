@@ -1,28 +1,50 @@
+##EXEMPTED FOR NOW B/C SOME OF THIS IS CLAUDE AND I NEED TO GO FIND IT
+
 from drawingAndProjectionin3D import *
 from cmu_graphics import *
 import numpy
 
 class Container:
-    def __init__(self, leftX, rightX, bottomY, topY, closeZ, farZ, color='saddleBrown'):
-        # These are already real world-space bounds (not screen coordinates),
-        # same units as everything in field.py -- e.g. leftX/rightX somewhere
-        # within +/- field.fieldLength/2, closeZ/farZ within +/- field.fieldDepth/2.
+    def __init__(self, leftX, rightX, bottomY, topY, closeZ, farZ):
         self.containerLeftX   = leftX
         self.containerRightX  = rightX
         self.containerBottomY = bottomY
         self.containerTopY    = topY
         self.containerCloseZ  = closeZ
         self.containerFarZ    = farZ
-        self.color = color
+        self.color = 'red'
 
         self.points = []
         self.edges  = []
         self.faces  = []
         self.buildContainer()
+
         self.pointArray = numpy.array(self.points, dtype=float).T
 
         self.isConnected = False
         self.isFalling   = False
+
+    # --- Not touched by this fix; both still assume screen-space attributes
+    # (containerCx/containerCy, containerHeight) that no longer exist now
+    # that the container lives in world space. These will need to be
+    # reworked -- e.g. connectContainer setting a world-space offset from
+    # the drone instead -- whenever you get to wiring up pickup/drop.
+    def connectContainer(self, drone):
+        self.isConnected = True
+        self.containerCx = drone.droneCx+20
+        self.containerCy = drone.droneCy+20
+        #REMOVE THE ARBITRARY +20
+
+    def fallingContainer(self, app):
+        if self.containerCy+5 <= app.height-self.containerHeight/2:
+            self.containerCy += 5
+        else:
+            self.containerCy = app.height-self.containerHeight/2
+            self.isFalling = False
+
+
+###REST OF THIS FILE IS EXEMPTED: This is Claude implementing the containers
+#into the field that I am exempting
 
     def addPoint(self, x, y, z):
         self.points.append([x, y, z, 1])
@@ -34,9 +56,6 @@ class Container:
     def addFace(self, indices, color):
         self.faces.append((indices, color))
 
-    # Builds a box from the six bounds passed into __init__, the same
-    # near/far-z pattern field.py uses for the barrier. Raw world points --
-    # nothing gets projected here. That happens every frame in draw().
     def buildContainer(self):
         leftX, rightX   = self.containerLeftX, self.containerRightX
         topY, bottomY   = self.containerTopY, self.containerBottomY
@@ -79,21 +98,3 @@ class Container:
                 screen.append(sx)
                 screen.append(sy)
             drawPolygon(*screen, fill=color, opacity=70)
-
-    # --- Not touched by this fix; both still assume screen-space attributes
-    # (containerCx/containerCy, containerHeight) that no longer exist now
-    # that the container lives in world space. These will need to be
-    # reworked -- e.g. connectContainer setting a world-space offset from
-    # the drone instead -- whenever you get to wiring up pickup/drop.
-    def connectContainer(self, drone):
-        self.isConnected = True
-        self.containerCx = drone.droneCx+20
-        self.containerCy = drone.droneCy+20
-        #REMOVE THE ARBITRARY +20
-
-    def fallingContainer(self, app):
-        if self.containerCy+5 <= app.height-self.containerHeight/2:
-            self.containerCy += 5
-        else:
-            self.containerCy = app.height-self.containerHeight/2
-            self.isFalling = False
