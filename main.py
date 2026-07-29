@@ -37,11 +37,17 @@ def onAppStart(app):
     app.propGuards = [propGuard1, propGuard2, propGuard3, propGuard4]
 
     #Field Vars
-    app.field = Field(app)
+    app.field = Field()
 
     #Container Vars
     app.container1 = Container(550, 550)
     app.containers = [app.container1]
+
+    #CLAUDE:
+    app.field  = Field()
+    app.camera = ChaseCamera()
+    app.droneX, app.droneY, app.droneZ = 0, -150, -900   # world; y is negative-up
+    app.droneX, app.droneY, app.droneZ = app.field.startPosition()
    
 def onKeyPress(app, key):
     if key == 't':
@@ -52,6 +58,12 @@ def onKeyPress(app, key):
         app.container1.fallingContainer(app)
 
 def onKeyHold(app, keys):
+    #Next 4 lines Claude
+    if 'up' in keys:
+        app.droneY -= 4        # y is negative-up, so this climbs
+    if 'down' in keys:
+        app.droneY += 4
+
     #tilting forward and backward
     if 'w' in keys:
         if app.forwardTiltAngle <= 60:
@@ -71,8 +83,8 @@ def onKeyHold(app, keys):
 def redrawAll(app):
     drawLabel('Use WASD for tilt if no controller connected', app.width/2, 50)
 
-    #Field
-    drawPrism(4, app.field.projectedFieldCords, app.width/2, app.height/2)
+    #Field (just this line is Claude)
+    app.field.draw(app, app.camera, app.width/2, app.height/2)
 
     #Container
     drawRect(app.container1.containerCx, app.container1.containerCy, 
@@ -106,6 +118,10 @@ def drawPrism(numSides, cords, cx, cy):
         drawLine(x1, y1, x3, y3)
 
 def onStep(app):
+    #following line is Claude:
+    # if app.field.hitsBarrier(app.droneX, app.droneY, app.droneZ, 60):
+    #     app.droneX = oldX      # stash the pre-move x at the top of onStep
+
     print(app.container1.isConnected)
     if app.connectedController:
         updateController(app, app.controller)
@@ -113,17 +129,27 @@ def onStep(app):
     app.sideTiltAngle += app.leftRightAxis
     app.forwardTiltAngle += app.forwardBackwardAxis
 
-    if app.sideTiltAngle < 0:
-        app.avr.droneCx -= 1*abs(0-app.sideTiltAngle)   #getRid of these 1s (and 0s)
+    #CLAUDE
+    app.droneZ += (app.forwardTiltAngle - 40) * 0.5   # 40 is your neutral
+    app.droneX += app.sideTiltAngle * 0.3
 
-    if app.sideTiltAngle > 0:
-        app.avr.droneCx += 1*abs(0-app.sideTiltAngle)
+    app.droneX, app.droneY, app.droneZ = app.field.clampToArena(
+        app.droneX, app.droneY, app.droneZ, 60)
+    app.camera.follow(app.droneX, app.droneY, app.droneZ)
+    app.avr.droneCx, app.avr.droneCy = app.camera.worldToScreen(
+        app.droneX, app.droneY, app.droneZ, app.width/2, app.height/2)
 
-    if app.forwardTiltAngle > 40:
-        app.avr.droneCy -= 0.5*abs(40-app.forwardTiltAngle)
+    # if app.sideTiltAngle < 0:
+    #     app.avr.droneCx -= 1*abs(0-app.sideTiltAngle)   #getRid of these 1s (and 0s)
 
-    if app.forwardTiltAngle < 40:
-        app.avr.droneCy += 0.5*abs(40-app.forwardTiltAngle)
+    # if app.sideTiltAngle > 0:
+    #     app.avr.droneCx += 1*abs(0-app.sideTiltAngle)
+
+    # if app.forwardTiltAngle > 40:
+    #     app.avr.droneCy -= 0.5*abs(40-app.forwardTiltAngle)
+
+    # if app.forwardTiltAngle < 40:
+    #     app.avr.droneCy += 0.5*abs(40-app.forwardTiltAngle)
 
     #check container connection:
     for container in app.containers:
