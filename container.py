@@ -34,14 +34,17 @@ class Container:
         self.containerFarZ = app.avr.droneZ-100
         self.buildContainer()
 
-    def fallingContainer(self, app):
+    def fallingContainer(self):
         containerHeight = self.containerTopY-self.containerBottomY
-        if self.containerBottomY+5 >= containerHeight/2:
-            self.containerBottomY -= 5
-            self.containerTopY -= 5
+        #The signs are backwards here b/c Claude wrote the field horribly. It has
+        #a higher altitude being a more negative number :(
+        if self.containerBottomY-5 <= containerHeight/2:
+            self.containerBottomY += 5
+            self.containerTopY += 5
         else:
             self.containerBottomY = 0
             self.isFalling = False
+        self.buildContainer()
 
 
 ###REST OF THIS FILE IS EXEMPTED: This is Claude implementing the same draw logic

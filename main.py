@@ -56,7 +56,7 @@ def onKeyPress(app, key):
         for container in app.field.containers:
             container.isConnected = False
             container.isFalling = True
-            container.fallingContainer(app)
+            container.fallingContainer()
 
 def onKeyHold(app, keys):
     #UNIVERSAL DESIGN: Can use controller and keys
@@ -90,7 +90,7 @@ def onStep(app):
     updateContainers(app)
 
 def updateDronePosition(app):
-    print(app.avr.droneX, app.avr.droneY, app.avr.droneZ)
+    # print(app.avr.droneX, app.avr.droneY, app.avr.droneZ)
     if -45<=app.avr.roll<=45:
         app.avr.roll += app.leftRightAxis*2 #x2 to get more snappy flight feel
         #Need these checks b/c could scale by 1.6 and go beyond limit
@@ -136,6 +136,10 @@ def updateContainers(app):
         if container.isConnected:
             container.connectContainer(app)
 
+        if container.isFalling:
+            container.fallingContainer()
+
+
     #MAKE THE FOLLOWING THEIR OWN FUNCTIONS B/C REPEATED
     app.stepsTaken += 1
     for propGuard in app.propGuards:
@@ -144,7 +148,7 @@ def updateContainers(app):
         propGuard.makePropGuard(propGuard.zDepth+10)
         propGuard.projectedCords = project(copy.deepcopy(propGuard.propGuardCords), app.avr.pitch, app.avr.roll)
 
-    #MAKE A FUCNTION FOR THIS
+    #MAKE A FUNCTION FOR THIS
     app.avr.projectedCubeCords = []
     app.avr.makeCenterCube(app.avr.zDepth) 
     app.avr.makeCenterCube(app.avr.zDepth+10)
