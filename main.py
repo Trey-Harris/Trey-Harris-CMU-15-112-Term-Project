@@ -62,11 +62,11 @@ def onKeyHold(app, keys):
 
     #tilting forward and backward
     if 'w' in keys:
-        #if app.avr.pitch <= 60:
-        app.avr.pitch += 0.5
+        if app.avr.pitch <= 80:
+            app.avr.pitch += 0.5
     if 's' in keys:
-        #if app.avr.pitch >= 20:
-        app.avr.pitch -= 0.5
+        if app.avr.pitch >= 40:
+            app.avr.pitch -= 0.5
 
     #tilting left and right
     if 'd' in keys:            
@@ -77,15 +77,28 @@ def onKeyHold(app, keys):
             app.avr.roll -= 1.5
 
 def onStep(app):
-    # print(app.container1.isConnected)
     if app.connectedController:
         updateController(app, app.controller)
 
-    app.avr.roll += app.leftRightAxis
-    app.avr.pitch += app.forwardBackwardAxis
+    if -45<=app.avr.roll<=45:
+        app.avr.roll += app.leftRightAxis*2 #x2 to get more snappy flight feel
+        #Need these checks b/c could scale by 1.6 and go beyond limit
+        if app.avr.roll<-45:
+            app.avr.roll=-45
+        if app.avr.roll>45:
+            app.avr.roll=45
 
+    if 40<=app.avr.pitch<=80:
+        app.avr.pitch += app.forwardBackwardAxis*2 
+        if app.avr.pitch>80:
+            app.avr.pitch=80
+        if app.avr.pitch<40:
+            app.avr.pitch=40
+
+    #Update dorne position (w/ scale factors for speed)
     app.avr.droneZ += (app.avr.pitch-60) * 0.5   # Arbitrary scale for flight feel
     app.avr.droneX += app.avr.roll * 0.3
+
 
     #START CLAUDE (EXEMPTED CODE)
     app.avr.droneX, app.avr.droneY, app.avr.droneZ = app.field.clampToArena(
@@ -97,7 +110,6 @@ def onStep(app):
         app.avr.droneX, app.avr.droneY, app.avr.droneZ, app.width/2, app.height/2)
     #END CLAUDE (ALL CODE BELOW IS MY OWN)
 
-    print(app.avr.droneY)
 
     #check container connection: THIS CODE BREAKS EVERYTHING, REWRITE!!!
     # for container in app.containers:
@@ -118,17 +130,11 @@ def onStep(app):
         propGuard.makePropGuard(propGuard.zDepth+10)
         propGuard.projectedCords = project(copy.deepcopy(propGuard.propGuardCords), app.avr.pitch, app.avr.roll)
 
-
+    #MAKE A FUCNTION FOR THIS
     app.avr.projectedCubeCords = []
-    #self.projectedCubeCords = self.computeCube(app)
-    app.avr.makeCenterCube(app.avr.zDepth) #probably don't need a function for this.
+    app.avr.makeCenterCube(app.avr.zDepth) 
     app.avr.makeCenterCube(app.avr.zDepth+10)
     app.avr.projectedCubeCords = project(copy.deepcopy(app.avr.projectedCubeCords), app.avr.pitch, app.avr.roll)
-    # app.avr.projectedCubeCords = []
-    # app.avr.projectedCubeCords = app.avr.computeCube(app)
-    # app.avr.makeCenterCube(app.avr.zDepth)
-    # app.avr.makeCenterCube(app.avr.zDepth+10)
-    # app.avr.projectedCubeCords = project(copy.deepcopy(app.avr.projectedCubeCords), app.avr.roll, app.avr.pitch)
 
 def redrawAll(app):
     drawLabel('Use WASD for tilt if no controller connected', app.width/2, 50)
@@ -150,8 +156,8 @@ def redrawAll(app):
     app.ground.draw(app.camera, app.width/2, app.height/2)
     app.ground.drawShadow(app.camera, app.avr, app.width/2, app.height/2)
 
-#Citation: Gemini helped with completing the shape (suggested to use % to 
-#connect index 7 with index 0)
+#Citation: Gemini suggested to use % to connect index 7 with index 0, but the 
+#rest of the code is my own
 def drawPrism(numSides, cords, cx, cy):
     for i in range(numSides):
         x1 = cords[i][0] + cx
