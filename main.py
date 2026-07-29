@@ -41,7 +41,8 @@ def onAppStart(app):
     app.propGuards = [propGuard1, propGuard2, propGuard3, propGuard4]
 
     #Container Vars
-    app.container1 = Container(400, 500, 0, 100, 10, 40)
+    app.container1 = Container(app, app.field.fieldLength-300, 
+                        app.field.fieldLength-200, app.field.fieldDepth+50, app.field.fieldDepth+100, 10, 40)
     app.containers = [app.container1]
 
    
@@ -95,7 +96,7 @@ def onStep(app):
         if app.avr.pitch<40:
             app.avr.pitch=40
 
-    #Update dorne position (w/ scale factors for speed)
+    #Update drone position (w/ scale factors for speed)
     app.avr.droneZ += (app.avr.pitch-60) * 0.5   # Arbitrary scale for flight feel
     app.avr.droneX += app.avr.roll * 0.3
 
@@ -143,14 +144,12 @@ def redrawAll(app):
     app.field.draw(app, app.camera, app.width/2, app.height/2)
 
     #Container
-    # drawRect(app.container1.containerCx, app.container1.containerCy, 
-    #          app.container1.containerWidth, app.container1.containerHeight, 
-    #          align='center', fill=None, border='red')
+    drawPrism(4, app.container1.projectedContainerCords, app.width/4, app.height/4, 'red')
 
     for propGuard in app.propGuards:    #gets each PropGuard instance from a list
-        drawPrism(propGuard.propGuardEdges, propGuard.projectedCords, app.avr.screenX, app.avr.screenY)
+        drawPrism(propGuard.propGuardEdges, propGuard.projectedCords, app.avr.screenX, app.avr.screenY, 'black')
     #Drone center
-    drawPrism(4, app.avr.projectedCubeCords, app.avr.screenX, app.avr.screenY)
+    drawPrism(4, app.avr.projectedCubeCords, app.avr.screenX, app.avr.screenY, 'black')
 
     #CLAUDE:
     app.ground.draw(app.camera, app.width/2, app.height/2)
@@ -158,23 +157,23 @@ def redrawAll(app):
 
 #Citation: Gemini suggested to use % to connect index 7 with index 0, but the 
 #rest of the code is my own
-def drawPrism(numSides, cords, cx, cy):
+def drawPrism(numSides, cords, cx, cy, color):
     for i in range(numSides):
         x1 = cords[i][0] + cx
         y1 = cords[i][1] + cy
         x2 = cords[(i+1)%numSides][0] + cx
         y2 = cords[(i+1)%numSides][1] + cy
         # % by numSides so that the last index connects to index 0
-        drawLine(x1, y1, x2, y2)
+        drawLine(x1, y1, x2, y2, fill=color)
 
         #Draws bottom half of 3D shape
         x3 = cords[i+numSides][0] + cx
         y3 = cords[i+numSides][1] + cy
         x4 = cords[((i+1)%numSides)+numSides][0] + cx
         y4 = cords[((i+1)%numSides)+numSides][1] + cy
-        drawLine(x3, y3, x4, y4)
+        drawLine(x3, y3, x4, y4, fill=color)
 
         # Connects the two faces together
-        drawLine(x1, y1, x3, y3)
+        drawLine(x1, y1, x3, y3, fill=color)
 
 runApp()

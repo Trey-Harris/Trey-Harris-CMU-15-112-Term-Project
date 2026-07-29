@@ -1,25 +1,32 @@
+from drawingAndProjectionin3D import *
+import copy
+
 class Container:
-    def __init__(self, leftX, rightX, bottomY, topY, closeZ, farZ):
+    def __init__(self, app, leftX, rightX, bottomY, topY, closeZ, farZ):
         self.containerLeftX = leftX
         self.containerRightX = rightX
         self.containerBottomY = bottomY
         self.containerTopY = topY
         self.containerCloseZ = closeZ
         self.containerFarZ = farZ
-        self.containerPoints = self.makeContainer()
+        self.projectedContainerCords = []
+        self.projectedContainerCords.extend(self.makeContainer(app, self.containerCloseZ))
+        self.projectedContainerCords.extend(self.makeContainer(app, self.containerFarZ))
+        self.projectedContainerCords = project(copy.deepcopy(self.projectedContainerCords), 20, 0)
         self.isConnected = False
         self.isFalling = False
 
 #Idea to loop over a tuple of zClose and zFar was inspired by Claude's
 #implementation in the exepmpted field class.
-    def makeContainer(self):
-        points = []
-        for z in (self.containerCloseZ, self.containerFarZ):
-            points.append([self.containerLeftX, self.containerTopY, z, 1])
-            points.append([self.containerLeftX, self.containerBottomY, z, 1])
-            points.append([self.containerRightX, self.containerTopY, z, 1])
-            points.append([self.containerRightX, self.containerBottomY, z, 1])
-        return points
+    def makeContainer(self, app, zDepth):
+        return makeShape(50, 4, app.width/4, app.width/4, zDepth)
+
+        # points = []
+        # points.append([self.containerLeftX, self.containerTopY, zDepth, 1])
+        # points.append([self.containerLeftX, self.containerBottomY, zDepth, 1])
+        # points.append([self.containerRightX, self.containerTopY, zDepth, 1])
+        # points.append([self.containerRightX, self.containerBottomY, zDepth, 1])
+        # return points
 
     def connectContainer(self, drone):
         self.isConnected = True

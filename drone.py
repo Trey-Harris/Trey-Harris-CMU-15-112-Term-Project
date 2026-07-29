@@ -22,23 +22,23 @@ class Drone:
         self.projectedCubeCords = project(copy.deepcopy(self.projectedCubeCords), self.pitch, self.roll)
         
 
-    def computeCube(self, app):
-        self.makeCenterCube(self.zDepth) #probably don't need a function for this.
-        self.makeCenterCube(self.zDepth+10)
-        self.projectedCubeCords = project(copy.deepcopy(self.projectedCubeCords), self.pitch, self.roll)
-        self.projectedCubeCords = makeTranslation(self.projectedCubeCords, 
-                                                    self.droneX, self.droneY, self.droneZ)
-        return self.makeClaude3D(app, copy.deepcopy(self.projectedCubeCords))
+    # def computeCube(self, app):
+    #     self.makeCenterCube(self.zDepth) #probably don't need a function for this.
+    #     self.makeCenterCube(self.zDepth+10)
+    #     self.projectedCubeCords = project(copy.deepcopy(self.projectedCubeCords), self.pitch, self.roll)
+    #     self.projectedCubeCords = makeTranslation(self.projectedCubeCords, 
+    #                                                 self.droneX, self.droneY, self.droneZ)
+    #     return self.makeClaude3D(app, copy.deepcopy(self.projectedCubeCords))
 
-    #FROM CLAUDE, DON"T UNDERSTAND, WORK ON THIS
-    def makeClaude3D(self, app, cords):
-        L = []
-        for i in range(len(cords)):
-            screenX, screenY = app.camera.worldToScreen(cords[i][0], 
-                                cords[i][1], cords[i][2], 
-                                app.width/2, app.height/2)
-            L.append((screenX, screenY))
-        return L
+    # #FROM CLAUDE, DON"T UNDERSTAND, WORK ON THIS
+    # def makeClaude3D(self, app, cords):
+    #     L = []
+    #     for i in range(len(cords)):
+    #         screenX, screenY = app.camera.worldToScreen(cords[i][0], 
+    #                             cords[i][1], cords[i][2], 
+    #                             app.width/2, app.height/2)
+    #         L.append((screenX, screenY))
+    #     return L
 
     def makeCenterCube(self, zDepth):
         self.projectedCubeCords.extend(makeShape(self.cubeSize, 4, 0, 0, zDepth))

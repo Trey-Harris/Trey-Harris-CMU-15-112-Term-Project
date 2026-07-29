@@ -1,5 +1,7 @@
-# CITATION: This entire file was written by Claude Opus. 
+# CITATION: This entire file was written by Claude. 
 # I AM EXEMPTING THIS CODE!!!
+
+
 
 # field.py
 # ---------------------------------------------------------------------------
@@ -500,7 +502,6 @@ class Field:
         y = min(-margin, max(self.ceilingAt(z) + margin, y))
         return x, y, z
 
-# ---- START CLAUDE (EXEMPTED) ---------------------------------------------
 import math
 from cmu_graphics import *
 
@@ -544,4 +545,3 @@ class Ground:
             points.append(sx)
             points.append(sy)
         drawPolygon(*points, fill='black', opacity=opacity)
-# ---- END CLAUDE ----------------------------------------------------------
