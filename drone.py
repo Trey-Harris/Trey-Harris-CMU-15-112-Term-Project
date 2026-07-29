@@ -8,8 +8,8 @@ class Drone:
         self.cubeSize = 20
         self.zDepth = zDepth
         #REMOVE THE TRIG
-        self.droneCx = app.width/2+(self.cubeSize*math.cos(math.radians(app.sideTiltAngle)))
-        self.droneCy = app.height/2+(self.cubeSize*math.sin(math.radians(app.sideTiltAngle)))
+        self.droneCx = app.width/2
+        self.droneCy = app.height/2
         self.projectedCubeCords = []
         self.makeCenterCube(self.zDepth) #probably don't need a function for this.
         self.makeCenterCube(self.zDepth+10)
