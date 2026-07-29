@@ -51,12 +51,12 @@ def onAppStart(app):
 
    
 def onKeyPress(app, key):
-    if key == 't':
+    if key == 'space':
         print('hi')
-        #for container in app.containers:
-        app.container1.isConnected = False
-        app.container1.isFalling = True
-        app.container1.fallingContainer(app)
+        for container in app.field.containers:
+            container.isConnected = False
+            container.isFalling = True
+            container.fallingContainer(app)
 
 def onKeyHold(app, keys):
     #UNIVERSAL DESIGN: Can use controller and keys
@@ -86,7 +86,11 @@ def onKeyHold(app, keys):
 def onStep(app):
     if app.connectedController:
         updateController(app, app.controller)
+    updateDronePosition(app)
+    updateContainers(app)
 
+def updateDronePosition(app):
+    print(app.avr.droneX, app.avr.droneY, app.avr.droneZ)
     if -45<=app.avr.roll<=45:
         app.avr.roll += app.leftRightAxis*2 #x2 to get more snappy flight feel
         #Need these checks b/c could scale by 1.6 and go beyond limit
@@ -117,17 +121,20 @@ def onStep(app):
         app.avr.droneX, app.avr.droneY, app.avr.droneZ, app.width/2, app.height/2)
     #END CLAUDE (ALL CODE BELOW IS MY OWN)
 
+def updateContainers(app):
+    for container in app.field.containers:
+        if ((abs(app.avr.droneZ-container.containerCloseZ)<app.avr.cubeSize or 
+            abs(app.avr.droneZ-container.containerFarZ)<app.avr.cubeSize) 
+            and
+            (abs(app.avr.droneX-container.containerLeftX)<app.avr.cubeSize or
+            abs(app.avr.droneX-container.containerRightX)<app.avr.cubeSize)
+            and
+            abs(app.avr.droneY-container.containerTopY)<50):
+            print('hi')
+            container.isConnected = True
 
-    #check container connection: THIS CODE BREAKS EVERYTHING, REWRITE!!!
-    # for container in app.containers:
-    #     if container.isFalling:
-    #         container.fallingContainer(app)
-
-    #     if  container.containerCy <= app.avr.droneCy + app.avr.cubeSize:
-    #         container.connectContainer(app.avr)
-
-    #     if container.isConnected == True:
-    #         container.connectContainer(app.avr)
+        if container.isConnected:
+            container.connectContainer(app)
 
     #MAKE THE FOLLOWING THEIR OWN FUNCTIONS B/C REPEATED
     app.stepsTaken += 1

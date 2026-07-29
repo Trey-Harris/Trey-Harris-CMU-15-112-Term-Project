@@ -19,33 +19,34 @@ class Container:
         self.faces  = []
         self.buildContainer()
 
-        self.pointArray = numpy.array(self.points, dtype=float).T
-
         self.isConnected = False
         self.isFalling   = False
 
-    # --- Not touched by this fix; both still assume screen-space attributes
-    # (containerCx/containerCy, containerHeight) that no longer exist now
-    # that the container lives in world space. These will need to be
-    # reworked -- e.g. connectContainer setting a world-space offset from
-    # the drone instead -- whenever you get to wiring up pickup/drop.
-    def connectContainer(self, drone):
+    def connectContainer(self, app):
+        containerWidth = abs(self.containerLeftX - self.containerRightX)
+        containerHeight = abs(self.containerBottomY - self.containerTopY)
         self.isConnected = True
-        self.containerCx = drone.droneCx+20
-        self.containerCy = drone.droneCy+20
-        #REMOVE THE ARBITRARY +20
+        self.containerLeftX = app.avr.droneX - containerWidth/2
+        self.containerRightX = app.avr.droneX + containerWidth/2
+        self.containerTopY = app.avr.droneY - containerHeight/2
+        self.containerBottomY = app.avr.droneY + containerHeight/2
+        self.containerCloseZ = app.avr.droneZ-75
+        self.containerFarZ = app.avr.droneZ-100
+        self.buildContainer()
 
     def fallingContainer(self, app):
-        if self.containerCy+5 <= app.height-self.containerHeight/2:
-            self.containerCy += 5
+        containerHeight = self.containerTopY-self.containerBottomY
+        if self.containerBottomY+5 >= containerHeight/2:
+            self.containerBottomY -= 5
+            self.containerTopY -= 5
         else:
-            self.containerCy = app.height-self.containerHeight/2
+            self.containerBottomY = 0
             self.isFalling = False
 
 
-###REST OF THIS FILE IS EXEMPTED: This is Claude implementing the containers
-#into the field that I am exempting
-
+###REST OF THIS FILE IS EXEMPTED: This is Claude implementing the same draw logic
+#from the field to the containers they just have to appear in this file to so that
+#method types work.
     def addPoint(self, x, y, z):
         self.points.append([x, y, z, 1])
         return len(self.points) - 1
@@ -57,6 +58,9 @@ class Container:
         self.faces.append((indices, color))
 
     def buildContainer(self):
+        self.points = []
+        self.edges  = []
+        self.faces  = []
         leftX, rightX   = self.containerLeftX, self.containerRightX
         topY, bottomY   = self.containerTopY, self.containerBottomY
         closeZ, farZ    = self.containerCloseZ, self.containerFarZ
@@ -75,6 +79,7 @@ class Container:
 
         self.addFace(corners[0], self.color)
         self.addFace(corners[1], self.color)
+        self.pointArray = numpy.array(self.points, dtype=float).T
 
     # Called by Field.draw() for every container in field.containers.
     # Same camera, same projection math field.py uses for its own geometry.
@@ -91,10 +96,10 @@ class Container:
             x2, y2 = camera.perspective(xs[b], ys[b], max(depthB, near), cx, cy)
             drawLine(x1, y1, x2, y2, fill=color, lineWidth=lineWidth)
 
-        for (indices, color) in self.faces:
-            screen = []
-            for i in indices:
-                sx, sy = camera.perspective(xs[i], ys[i], max(depths[i], near), cx, cy)
-                screen.append(sx)
-                screen.append(sy)
-            drawPolygon(*screen, fill=color, opacity=70)
+        # for (indices, color) in self.faces:
+        #     screen = []
+        #     for i in indices:
+        #         sx, sy = camera.perspective(xs[i], ys[i], max(depths[i], near), cx, cy)
+        #         screen.append(sx)
+        #         screen.append(sy)
+        #     drawPolygon(*screen, fill=color, opacity=70)
