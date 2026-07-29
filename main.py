@@ -40,7 +40,7 @@ def onAppStart(app):
     app.field = Field()
 
     #Container Vars
-    app.container1 = Container(550, 550)
+    app.container1 = Container(400, 500, 0, 100, 10, 40)
     app.containers = [app.container1]
 
     #CLAUDE:
@@ -87,9 +87,9 @@ def redrawAll(app):
     app.field.draw(app, app.camera, app.width/2, app.height/2)
 
     #Container
-    drawRect(app.container1.containerCx, app.container1.containerCy, 
-             app.container1.containerWidth, app.container1.containerHeight, 
-             align='center', fill=None, border='red')
+    # drawRect(app.container1.containerCx, app.container1.containerCy, 
+    #          app.container1.containerWidth, app.container1.containerHeight, 
+    #          align='center', fill=None, border='red')
 
     for propGuard in app.propGuards:    #gets each PropGuard instance from a list
         drawPrism(propGuard.propGuardEdges, propGuard.projectedCords, app.avr.droneCx, app.avr.droneCy)
@@ -118,10 +118,6 @@ def drawPrism(numSides, cords, cx, cy):
         drawLine(x1, y1, x3, y3)
 
 def onStep(app):
-    #following line is Claude:
-    # if app.field.hitsBarrier(app.droneX, app.droneY, app.droneZ, 60):
-    #     app.droneX = oldX      # stash the pre-move x at the top of onStep
-
     print(app.container1.isConnected)
     if app.connectedController:
         updateController(app, app.controller)
@@ -129,38 +125,29 @@ def onStep(app):
     app.sideTiltAngle += app.leftRightAxis
     app.forwardTiltAngle += app.forwardBackwardAxis
 
-    #CLAUDE
+    #START CLAUDE (EXEMPTED CODE)
     app.droneZ += (app.forwardTiltAngle - 40) * 0.5   # 40 is your neutral
     app.droneX += app.sideTiltAngle * 0.3
 
     app.droneX, app.droneY, app.droneZ = app.field.clampToArena(
         app.droneX, app.droneY, app.droneZ, 60)
+    
     app.camera.follow(app.droneX, app.droneY, app.droneZ)
+
     app.avr.droneCx, app.avr.droneCy = app.camera.worldToScreen(
         app.droneX, app.droneY, app.droneZ, app.width/2, app.height/2)
+    #END CLAUDE (ALL CODE BELOW IS MY OWN)
 
-    # if app.sideTiltAngle < 0:
-    #     app.avr.droneCx -= 1*abs(0-app.sideTiltAngle)   #getRid of these 1s (and 0s)
+    #check container connection: THIS CODE BREAKS EVERYTHING, REWRITE
+    # for container in app.containers:
+    #     if container.isFalling:
+    #         container.fallingContainer(app)
 
-    # if app.sideTiltAngle > 0:
-    #     app.avr.droneCx += 1*abs(0-app.sideTiltAngle)
+    #     if  container.containerCy <= app.avr.droneCy + app.avr.cubeSize:
+    #         container.connectContainer(app.avr)
 
-    # if app.forwardTiltAngle > 40:
-    #     app.avr.droneCy -= 0.5*abs(40-app.forwardTiltAngle)
-
-    # if app.forwardTiltAngle < 40:
-    #     app.avr.droneCy += 0.5*abs(40-app.forwardTiltAngle)
-
-    #check container connection:
-    for container in app.containers:
-        if container.isFalling:
-            container.fallingContainer(app)
-
-        if  container.containerCy <= app.avr.droneCy + app.avr.cubeSize:
-            container.connectContainer(app.avr)
-
-        if container.isConnected == True:
-            container.connectContainer(app.avr)
+    #     if container.isConnected == True:
+    #         container.connectContainer(app.avr)
 
     #MAKE THE FOLLOWING THEIR OWN FUNCTIONS B/C REPEATED
     app.stepsTaken += 1

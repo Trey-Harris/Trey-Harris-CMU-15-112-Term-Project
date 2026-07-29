@@ -1,3 +1,6 @@
+# CITATION: This entire file was written by Claude Opus. 
+# I AM EXEMPTING THIS CODE!!!
+
 # field.py
 # ---------------------------------------------------------------------------
 # 3D playing field + third-person chase camera for the AVR drone simulator.
@@ -6,8 +9,6 @@
 # frame overhead, and a solid barrier splitting the field in half.
 # It is deliberately larger than one screenful -- you fly to see the rest.
 #
-# CITATION: this file was written by Claude (Anthropic) with my professor's
-# permission. The rest of the project is my own work.
 # ---------------------------------------------------------------------------
 
 import math
