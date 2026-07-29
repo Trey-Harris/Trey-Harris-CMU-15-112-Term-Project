@@ -138,7 +138,7 @@ def onStep(app):
         app.droneX, app.droneY, app.droneZ, app.width/2, app.height/2)
     #END CLAUDE (ALL CODE BELOW IS MY OWN)
 
-    #check container connection: THIS CODE BREAKS EVERYTHING, REWRITE
+    #check container connection: THIS CODE BREAKS EVERYTHING, REWRITE!!!
     # for container in app.containers:
     #     if container.isFalling:
     #         container.fallingContainer(app)

@@ -21,16 +21,15 @@ def makeShape(radius, numEdges, dispX, dispY, zDepth):
 def project(app, cords):
     projectedCords = []
     projectAndRotateMatrix = numpy.matmul(app.projectionMatrix, makeXRotationMatrix(app.forwardTiltAngle))
-    projectAndRotateMatrix = numpy.matmul(projectAndRotateMatrix, makeYRotationMatrix(app.sideTiltAngle))
+    projectAndRotateMatrix = numpy.matmul(projectAndRotateMatrix, makeZRotationMatrix(app.sideTiltAngle))
     for i in range(len(cords)):
         projectedPoint = numpy.matmul(projectAndRotateMatrix, cords[i])
-        perspectiveFactor = cords[i][3]
-        projectedPoint[0] /= perspectiveFactor
-        projectedPoint[1] /= perspectiveFactor
         projectedCords.append(projectedPoint)
     return projectedCords
 
 ###Projection Matricies: Learned the style of matrix from Eric, Googled the actual ones
+
+#Rotates about x-axis (pitch)
 def makeXRotationMatrix(angle):
     cosVal = math.cos(math.radians(angle))
     sinVal = math.sin(math.radians(angle))
@@ -41,7 +40,8 @@ def makeXRotationMatrix(angle):
         [0, 0, 0, 1]
     ]
 
-def makeYRotationMatrix(angle):
+#Rotates about z-axis (into the screen, equivalent to roll)
+def makeZRotationMatrix(angle):
     cosVal = math.cos(math.radians(angle))
     sinVal = math.sin(math.radians(angle))
     return [
@@ -50,3 +50,13 @@ def makeYRotationMatrix(angle):
         [-sinVal, 0, cosVal, 0],
         [0, 0, 0, 1]
     ]
+
+def translateMatrix(dx, dy, dz):
+    return[
+        [1, 0, 0, dx],
+        [0, 1, 0, dy],
+        [0, 0, 1, dz],
+        [0, 0, 0, 1]
+    ]
+
+#no YRotationMAtrix b/c that would be yaw which the drone doesn't do.

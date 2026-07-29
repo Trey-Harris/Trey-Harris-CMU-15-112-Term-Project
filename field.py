@@ -8,41 +8,41 @@
 # The arena is a long rectangular hall: a printed ground plane, a gabled cage
 # frame overhead, and a solid barrier splitting the field in half.
 # It is deliberately larger than one screenful -- you fly to see the rest.
-#
 # ---------------------------------------------------------------------------
 
 import math
 import numpy
+from drawingAndProjectionin3D import *
 from cmu_graphics import *
 
 
-# ===========================================================================
-# Small matrix helpers. These live here rather than in
-# drawingAndProjectionin3D.py so that file stays exactly as I wrote it.
-# ===========================================================================
-def makeXRotation(angle):
-    cosVal = math.cos(math.radians(angle))
-    sinVal = math.sin(math.radians(angle))
-    return numpy.array([[1, 0, 0, 0],
-                        [0, cosVal, -sinVal, 0],
-                        [0, sinVal, cosVal, 0],
-                        [0, 0, 0, 1]], dtype=float)
+# # ===========================================================================
+# # Small matrix helpers. These live here rather than in
+# # drawingAndProjectionin3D.py so that file stays exactly as I wrote it.
+# # ===========================================================================
+# def makeXRotationMatrixMatrix(angle):
+#     cosVal = math.cos(math.radians(angle))
+#     sinVal = math.sin(math.radians(angle))
+#     return numpy.array([[1, 0, 0, 0],
+#                         [0, cosVal, -sinVal, 0],
+#                         [0, sinVal, cosVal, 0],
+#                         [0, 0, 0, 1]], dtype=float)
 
 
-def makeYRotation(angle):
-    cosVal = math.cos(math.radians(angle))
-    sinVal = math.sin(math.radians(angle))
-    return numpy.array([[cosVal, 0, sinVal, 0],
-                        [0, 1, 0, 0],
-                        [-sinVal, 0, cosVal, 0],
-                        [0, 0, 0, 1]], dtype=float)
+# def makeZRotationMatrix(angle):
+#     cosVal = math.cos(math.radians(angle))
+#     sinVal = math.sin(math.radians(angle))
+#     return numpy.array([[cosVal, 0, sinVal, 0],
+#                         [0, 1, 0, 0],
+#                         [-sinVal, 0, cosVal, 0],
+#                         [0, 0, 0, 1]], dtype=float)
 
 
-def makeTranslation(dx, dy, dz):
-    return numpy.array([[1, 0, 0, dx],
-                        [0, 1, 0, dy],
-                        [0, 0, 1, dz],
-                        [0, 0, 0, 1]], dtype=float)
+# def makeTranslation(dx, dy, dz):
+#     return numpy.array([[1, 0, 0, dx],
+#                         [0, 1, 0, dy],
+#                         [0, 0, 1, dz],
+#                         [0, 0, 0, 1]], dtype=float)
 
 
 # Trim a line to the window rectangle, returning None if it misses entirely.
@@ -179,9 +179,9 @@ class ChaseCamera:
         # Slide the world so the camera sits at the origin, then spin it so
         # the camera looks straight down +z.
         cameraX, cameraY, cameraZ = self.getPosition()
-        matrix = numpy.matmul(makeXRotation(self.getPitch()),
-                              makeYRotation(-self.heading))
-        return numpy.matmul(matrix, makeTranslation(-cameraX, -cameraY, -cameraZ))
+        matrix = numpy.matmul(makeXRotationMatrix(self.getPitch()),
+                              makeZRotationMatrix(-self.heading))
+        return numpy.matmul(matrix, translateMatrix(-cameraX, -cameraY, -cameraZ))
 
     # Every point in one numpy call instead of one call per point. pointArray
     # is shape (4, N); the result is camera space, where z is depth ahead.
@@ -228,14 +228,20 @@ class Field:
         self.barrierPanels    = 12
 
         # ---- Ground grid ----------------------------------------------------
-        self.gridSpacing = 150
+        self.gridSpacing = 200
+        # Pushed back in the sort order by more than one tile, so ground
+        # always paints before the things resting on it.
+        self.floorSortBias = 320
 
         # ---- Colours --------------------------------------------------------
-        self.groundColor    = 'darkOliveGreen'
-        self.gridColor      = 'gray'
+        self.groundColor    = 'forestGreen'   # perimeter outline
+        self.groundFill     = 'forestGreen'   # panel fill
+        self.floorLight     = 'oliveDrab'        # alternating floor tiles
+        self.floorDark      = 'darkOliveGreen'
+        self.gridColor      = 'gray'             # tile borders = the grid
         self.frameColor     = 'dimGray'
-        self.barrierColor   = 'chocolate'    # outline
-        self.barrierFill    = 'sienna'       # solid face
+        self.barrierColor   = 'lightSlateGray'    # outline
+        self.barrierFill    = 'lightSlateGray'       # solid face
 
         self.points = []
         self.edges  = []        # (indexA, indexB, colour, lineWidth)
@@ -272,17 +278,28 @@ class Field:
         for i in range(4):
             self.addEdge(corners[i], corners[(i+1) % 4], self.groundColor, 3)
 
-        # Lines running away from the camera.
+        # Filled in grid-sized panels rather than one huge quad, same reason
+        # as the wall: a single panel would sort as one unit at its average
+        # depth and could cover things nearer than its far edge.
         columns = int(self.fieldLength // self.gridSpacing)
-        for col in range(1, columns):
-            x = -halfLength + col*self.gridSpacing
+        rows    = int(self.fieldDepth // self.gridSpacing)
+        colEdges = [-halfLength + c*self.gridSpacing for c in range(columns + 1)]
+        rowEdges = [-halfDepth + r*self.gridSpacing for r in range(rows + 1)]
+        colEdges[0], colEdges[-1] = -halfLength, halfLength
+        rowEdges[0], rowEdges[-1] = -halfDepth, halfDepth
+        for c in range(len(colEdges) - 1):
+            for r in range(len(rowEdges) - 1):
+                x1, x2 = colEdges[c], colEdges[c+1]
+                z1, z2 = rowEdges[r], rowEdges[r+1]
+                self.addFace([self.addPoint(x1, 0, z1), self.addPoint(x2, 0, z1),
+                              self.addPoint(x2, 0, z2), self.addPoint(x1, 0, z2)],
+                             self.groundFill)
+
+        # Grid lines on top of the fill, running both directions.
+        for x in colEdges[1:-1]:
             self.addEdge(self.addPoint(x, 0, -halfDepth),
                          self.addPoint(x, 0,  halfDepth), self.gridColor, 1)
-
-        # Lines running left to right.
-        rows = int(self.fieldDepth // self.gridSpacing)
-        for row in range(1, rows):
-            z = -halfDepth + row*self.gridSpacing
+        for z in rowEdges[1:-1]:
             self.addEdge(self.addPoint(-halfLength, 0, z),
                          self.addPoint( halfLength, 0, z), self.gridColor, 1)
 
