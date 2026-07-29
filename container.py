@@ -1,5 +1,3 @@
-##EXEMPTED FOR NOW B/C SOME OF THIS IS CLAUDE AND I NEED TO GO FIND IT
-
 from drawingAndProjectionin3D import *
 from cmu_graphics import *
 import numpy
@@ -23,19 +21,20 @@ class Container:
         self.isFalling   = False
 
     def connectContainer(self, app):
+        self.isConnected = True
         containerWidth = abs(self.containerLeftX - self.containerRightX)
         containerHeight = abs(self.containerBottomY - self.containerTopY)
-        self.isConnected = True
         self.containerLeftX = app.avr.droneX - containerWidth/2
         self.containerRightX = app.avr.droneX + containerWidth/2
-        self.containerTopY = app.avr.droneY - containerHeight/2
-        self.containerBottomY = app.avr.droneY + containerHeight/2
-        self.containerCloseZ = app.avr.droneZ-75
-        self.containerFarZ = app.avr.droneZ-100
+        self.containerTopY = app.avr.droneY
+        self.containerBottomY = app.avr.droneY + containerHeight
+        self.containerCloseZ = app.avr.droneZ-50
+        self.containerFarZ = app.avr.droneZ
         self.buildContainer()
 
     def fallingContainer(self):
         containerHeight = self.containerTopY-self.containerBottomY
+
         #The signs are backwards here b/c Claude wrote the field horribly. It has
         #a higher altitude being a more negative number :(
         if self.containerBottomY-5 <= containerHeight/2:
@@ -99,10 +98,10 @@ class Container:
             x2, y2 = camera.perspective(xs[b], ys[b], max(depthB, near), cx, cy)
             drawLine(x1, y1, x2, y2, fill=color, lineWidth=lineWidth)
 
-        # for (indices, color) in self.faces:
-        #     screen = []
-        #     for i in indices:
-        #         sx, sy = camera.perspective(xs[i], ys[i], max(depths[i], near), cx, cy)
-        #         screen.append(sx)
-        #         screen.append(sy)
-        #     drawPolygon(*screen, fill=color, opacity=70)
+        for (indices, color) in self.faces:
+            screen = []
+            for i in indices:
+                sx, sy = camera.perspective(xs[i], ys[i], max(depths[i], near), cx, cy)
+                screen.append(sx)
+                screen.append(sy)
+            drawPolygon(*screen, fill=color, opacity=70)

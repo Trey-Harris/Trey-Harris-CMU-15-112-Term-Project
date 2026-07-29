@@ -24,13 +24,13 @@ def onAppStart(app):
     #Drone vars
     # app.avr.pitch = 40
     # app.avr.roll = 0
-    app.avr = Drone(app, 5)   #12 is the zDepth
+    app.avr = Drone(app, 5)
 
     #START CLAUDE (EXEMPT):
     app.field = Field()
-    app.field.addContainer(Container(700, 800, 0, -40, 275, 325)) 
-    app.field.addContainer(Container(300, 400, 0, -40, 275, 325))
-    app.field.addContainer(Container(400, 500, 0, -40, -25, 25))
+    app.field.addContainer(Container(700, 800, 0, -20, 230, 260)) 
+    app.field.addContainer(Container(300, 400, 0, -20, 230, 260))
+    app.field.addContainer(Container(400, 500, 0, -20, 30, 60))
 
     app.avr.droneX, app.avr.droneY, app.avr.droneZ = app.field.startPosition()
 
@@ -90,7 +90,7 @@ def onStep(app):
     updateContainers(app)
 
 def updateDronePosition(app):
-    # print(app.avr.droneX, app.avr.droneY, app.avr.droneZ)
+    #print('drone', app.avr.droneY)
     if -45<=app.avr.roll<=45:
         app.avr.roll += app.leftRightAxis*2 #x2 to get more snappy flight feel
         #Need these checks b/c could scale by 1.6 and go beyond limit
@@ -123,14 +123,26 @@ def updateDronePosition(app):
 
 def updateContainers(app):
     for container in app.field.containers:
-        if ((abs(app.avr.droneZ-container.containerCloseZ)<app.avr.cubeSize or 
-            abs(app.avr.droneZ-container.containerFarZ)<app.avr.cubeSize) 
+        containerWidth = container.containerLeftX-container.containerRightX
+        containerDepth = container.containerFarZ-container.containerCloseZ
+        containerCenterX = container.containerLeftX+containerWidth/2
+        containerCenterZ = container.containerCloseZ+containerDepth/2
+
+        if ((abs(app.avr.droneZ-100-container.containerCloseZ)<=50 or 
+            abs(app.avr.droneZ-100-container.containerFarZ)<=50) 
             and
-            (abs(app.avr.droneX-container.containerLeftX)<app.avr.cubeSize or
-            abs(app.avr.droneX-container.containerRightX)<app.avr.cubeSize)
+            (abs(app.avr.droneX-container.containerLeftX)<=50 or
+            abs(app.avr.droneX-container.containerRightX)<=50)
             and
-            abs(app.avr.droneY-container.containerTopY)<50):
-            print('hi')
+            (app.avr.droneY)>=-50):
+
+        # #Attempt at a better one:
+        #     # print('container', containerCenterX, containerCenterZ)
+        #         # if(abs(app.avr.droneX-containerCenterX)<=app.avr.cubeSize and
+        #         #     abs(app.avr.droneZ-containerCenterZ)<=app.avr.cubeSize and 
+        #         #     abs(app.avr.droneY-container.containerTopY)<50):
+            
+        #     print('hi')
             container.isConnected = True
 
         if container.isConnected:

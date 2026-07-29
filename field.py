@@ -242,6 +242,7 @@ class Field:
         self.frameColor     = 'dimGray'
         self.barrierColor   = 'lightSlateGray'    # outline
         self.barrierFill    = 'lightSlateGray'       # solid face
+        self.dropZoneColor  = 'gold'                 # container delivery markers
 
         self.points = []
         self.edges  = []        # (indexA, indexB, colour, lineWidth)
@@ -249,6 +250,7 @@ class Field:
         self.buildGround()
         self.buildCage()
         self.buildBarrier()
+        self.buildDropZones()
 
         # Transposed to (4, N) so the whole field transforms in one matmul.
         self.pointArray = numpy.array(self.points, dtype=float).T
@@ -382,6 +384,52 @@ class Field:
                        self.addPoint(-halfThickness, 0,    z)]
             for i in range(4):
                 self.addEdge(corners[i], corners[(i+1) % 4], self.barrierColor, 2)
+
+    def buildDropZones(self):
+        # Painted rectangles on the floor marking where containers should be
+        # dropped off. Right-side positions come from the (leftX, rightX,
+        # ..., closeZ, farZ) bounds each Container() is spawned with in
+        # main.py -- the zone is centered on each container's spawn point,
+        # not drawn at its exact bounds, so it can be made a bit bigger
+        # than the container without the math being scattered per-zone.
+        rightContainers = [
+            (700, 800, 275, 325),
+            (300, 400, 275, 325),
+            (400, 500, -25,  25),
+        ]
+
+        # Every zone is the same size: the container's own footprint plus a
+        # margin on all sides, so there's room to land without lining up
+        # pixel-perfect. Measured off the first container since all three
+        # currently share the same width/depth -- if that ever changes,
+        # this should measure the largest container instead of assuming.
+        zoneMargin      = 20
+        containerWidth  = rightContainers[0][1] - rightContainers[0][0]
+        containerDepth  = rightContainers[0][3] - rightContainers[0][2]
+        self.dropZoneWidth = containerWidth + 2*zoneMargin
+        self.dropZoneDepth = containerDepth + 2*zoneMargin
+
+        for (leftX, rightX, nearZ, farZ) in rightContainers:
+            centerX = (leftX + rightX) / 2
+            centerZ = (nearZ + farZ) / 2
+            self.addDropZone(centerX, centerZ)
+            self.addDropZone(-centerX, centerZ)   # mirrored across the barrier
+
+    def addDropZone(self, centerX, centerZ):
+        # Drawn as a single flat face, not a grid of panels like buildGround
+        # -- these are small enough, and few enough, that one quad per zone
+        # doesn't have the same "sorts as one unit and punches through
+        # things" problem the ground and barrier were built to avoid.
+        # Lifted a hair above y=0 so it doesn't z-fight with the ground
+        # panel directly beneath it.
+        halfWidth = self.dropZoneWidth / 2
+        halfDepth = self.dropZoneDepth / 2
+        y = -1
+        self.addFace([self.addPoint(centerX - halfWidth, y, centerZ - halfDepth),
+                      self.addPoint(centerX + halfWidth, y, centerZ - halfDepth),
+                      self.addPoint(centerX + halfWidth, y, centerZ + halfDepth),
+                      self.addPoint(centerX - halfWidth, y, centerZ + halfDepth)],
+                     self.dropZoneColor)
 
     # -------------------------------------------------------------------
     # Drawing
