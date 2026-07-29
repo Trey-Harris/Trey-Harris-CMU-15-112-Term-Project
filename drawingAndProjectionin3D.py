@@ -1,4 +1,3 @@
-#from main import *
 import numpy
 import math
 
@@ -12,6 +11,12 @@ def makeShape(radius, numEdges, dispX, dispY, zDepth):
         shapeCords.append([dx + dispX, dy + dispY, zDepth, 1])
         angle += 360/numEdges
     return shapeCords
+
+def makeTranslation(cords, dx, dy, dz):
+    res = []
+    for i in range(len(cords)):
+        res.append(numpy.matmul(cords[i], makeTranslationMatrix(dx, dy, dz)))
+    return res
 
 #Citation: Gemini helped me debug. 
 #Found an aliasing issue when this used to be a mutating function
@@ -27,14 +32,6 @@ def project(cords, xAngle, zAngle):
         projectedCords.append(projectedPoint)
     return projectedCords
 
-def makeTranslation(cords, dx, dy, dz):
-    res = []
-    for i in range(len(cords)):
-        res.append(numpy.matmul(cords[i], makeTranslationMatrix(dx, dy, dz)))
-    return res
-
-
-
 ###Projection Matricies: Learned the style of matrix from Eric, Googled the actual ones
 
 #Orthographic Projection Matrix, flattens into 2D space and keeps lines parallel
@@ -45,6 +42,7 @@ def makeProjectionMatrix():
         [0, 0, 1, 0],
         [0, 0, 1, 0]
     ] 
+
 #Rotates about x-axis (pitch)
 def makeXRotationMatrix(angle):
     cosVal = math.cos(math.radians(angle))
@@ -67,6 +65,7 @@ def makeZRotationMatrix(angle):
         [0, 0, 0, 1]
     ]
 
+#Translates coordinates w/o distortion or rotation
 def makeTranslationMatrix(dx, dy, dz):
     return[
         [1, 0, 0, dx],

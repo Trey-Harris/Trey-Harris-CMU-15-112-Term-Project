@@ -28,9 +28,9 @@ def onAppStart(app):
 
     #START CLAUDE (EXEMPT):
     app.field = Field()
-    app.field.addContainer(Container(700, 800, 0, -20, 230, 260)) 
-    app.field.addContainer(Container(300, 400, 0, -20, 230, 260))
-    app.field.addContainer(Container(400, 500, 0, -20, 30, 60))
+    app.field.addContainer(Container(app, 700, 800, 0, -20, 230, 260)) 
+    app.field.addContainer(Container(app, 300, 400, 0, -20, 230, 260))
+    app.field.addContainer(Container(app, 400, 500, 0, -20, 30, 60))
 
     app.avr.droneX, app.avr.droneY, app.avr.droneZ = app.field.startPosition()
 
@@ -38,7 +38,7 @@ def onAppStart(app):
     #END CLAUDE
 
  #Prop guard vars
-    propGuard1 = PropGuard(app, 45, 20) #make these be relative to the drone
+    propGuard1 = PropGuard(app, 45, 20) #make these be relative toF the drone
     propGuard2 = PropGuard(app, 135, 20)
     propGuard3 = PropGuard(app, 225, 4)
     propGuard4 = PropGuard(app, 315, 4)
@@ -52,7 +52,6 @@ def onAppStart(app):
    
 def onKeyPress(app, key):
     if key == 'space':
-        print('hi')
         for container in app.field.containers:
             container.isConnected = False
             container.isFalling = True
@@ -90,7 +89,6 @@ def onStep(app):
     updateContainers(app)
 
 def updateDronePosition(app):
-    #print('drone', app.avr.droneY)
     if -45<=app.avr.roll<=45:
         app.avr.roll += app.leftRightAxis*2 #x2 to get more snappy flight feel
         #Need these checks b/c could scale by 1.6 and go beyond limit
@@ -107,11 +105,11 @@ def updateDronePosition(app):
             app.avr.pitch=40
 
     #Update drone position (w/ scale factors for speed)
-    app.avr.droneZ += (app.avr.pitch-60) * 0.5   # Arbitrary scale for flight feel
+    app.avr.droneZ += (app.avr.pitch-60) * 0.5   # Arbitrary scale for better flight characteristics
     app.avr.droneX += app.avr.roll * 0.3
 
 
-    #START CLAUDE (EXEMPTED CODE)
+    #START EXEMPTED CODE (for camera updates in field code)
     app.avr.droneX, app.avr.droneY, app.avr.droneZ = app.field.clampToArena(
         app.avr.droneX, app.avr.droneY, app.avr.droneZ, 0)
     
@@ -123,26 +121,17 @@ def updateDronePosition(app):
 
 def updateContainers(app):
     for container in app.field.containers:
-        containerWidth = container.containerLeftX-container.containerRightX
+        containerWidth = container.containerRightX-container.containerLeftX
         containerDepth = container.containerFarZ-container.containerCloseZ
-        containerCenterX = container.containerLeftX+containerWidth/2
-        containerCenterZ = container.containerCloseZ+containerDepth/2
-
-        if ((abs(app.avr.droneZ-100-container.containerCloseZ)<=50 or 
-            abs(app.avr.droneZ-100-container.containerFarZ)<=50) 
+        containerHeight = container.containerBottomY-container.containerTopY
+        if ((abs(app.avr.droneZ-100-container.containerCloseZ)<=containerDepth/4 or 
+            abs(app.avr.droneZ-100-container.containerFarZ)<=containerDepth/4) 
             and
-            (abs(app.avr.droneX-container.containerLeftX)<=50 or
-            abs(app.avr.droneX-container.containerRightX)<=50)
+            (abs(app.avr.droneX-container.containerLeftX)<=containerWidth/2 or
+            abs(app.avr.droneX-container.containerRightX)<=containerWidth/2)
             and
-            (app.avr.droneY)>=-50):
-
-        # #Attempt at a better one:
-        #     # print('container', containerCenterX, containerCenterZ)
-        #         # if(abs(app.avr.droneX-containerCenterX)<=app.avr.cubeSize and
-        #         #     abs(app.avr.droneZ-containerCenterZ)<=app.avr.cubeSize and 
-        #         #     abs(app.avr.droneY-container.containerTopY)<50):
-            
-        #     print('hi')
+            (app.avr.droneY)>=-containerHeight):    #negative b/c Claude has increasing
+                                                    #altitude as negative
             container.isConnected = True
 
         if container.isConnected:
@@ -162,29 +151,30 @@ def updateContainers(app):
 
     #MAKE A FUNCTION FOR THIS
     app.avr.projectedCubeCords = []
-    app.avr.makeCenterCube(app.avr.zDepth) 
-    app.avr.makeCenterCube(app.avr.zDepth+10)
+    app.avr.projectedCubeCords.extend(makeShape(app.avr.cubeSize, 4, 0, 0, app.avr.zDepth))
+    app.avr.projectedCubeCords.extend(makeShape(app.avr.cubeSize, 4, 0, 0, app.avr.zDepth+10))
     app.avr.projectedCubeCords = project(copy.deepcopy(app.avr.projectedCubeCords), app.avr.pitch, app.avr.roll)
 
 def redrawAll(app):
     drawLabel('Use WASD for tilt if no controller connected', app.width/2, 50)
 
-    #Field (just this line is Claude)
+    #EXEMPTED NEXT 3 LINES (Part of field):
     app.field.draw(app, app.camera, app.width/2, app.height/2)
-    #Also updates container cords
-
-    #Container
-    #app.container1.draw(app, app.camera, app.width/2, app.height/2)
-    #drawPrism(4, app.container1.projectedContainerCords, app.width/4, app.height/4, 'red')
-
-    for propGuard in app.propGuards:    #gets each PropGuard instance from a list
-        drawPrism(propGuard.propGuardEdges, propGuard.projectedCords, app.avr.screenX, app.avr.screenY, 'black')
-    #Drone center
-    drawPrism(4, app.avr.projectedCubeCords, app.avr.screenX, app.avr.screenY, 'black')
-
-    #CLAUDE:
     app.ground.draw(app.camera, app.width/2, app.height/2)
     app.ground.drawShadow(app.camera, app.avr, app.width/2, app.height/2)
+
+    #Drawing Container
+    for container in app.field.containers:
+        if container.isConnected:
+            drawPrism(4, container.connectedProjection, app.avr.screenX, app.avr.screenY, 'red')
+
+    #Drawing Prop Guards
+    for propGuard in app.propGuards:    #gets each PropGuard instance from a list
+        drawPrism(propGuard.propGuardEdges, propGuard.projectedCords, app.avr.screenX, app.avr.screenY, 'black')
+
+    #Drawing Drone Center
+    drawPrism(4, app.avr.projectedCubeCords, app.avr.screenX, app.avr.screenY, 'black')
+
 
 #Citation: Gemini suggested to use % to connect index 7 with index 0, but the 
 #rest of the code is my own

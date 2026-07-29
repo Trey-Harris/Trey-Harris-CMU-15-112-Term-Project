@@ -1,5 +1,4 @@
-# CITATION: This entire file was written by Claude Opus. 
-# I AM EXEMPTING THIS CODE!!!
+# I AM EXEMPTING THIS CODE: This entire file was written by Claude. 
 
 # field.py
 # ---------------------------------------------------------------------------
@@ -14,36 +13,6 @@ import math
 import numpy
 from drawingAndProjectionin3D import *
 from cmu_graphics import *
-
-
-# # ===========================================================================
-# # Small matrix helpers. These live here rather than in
-# # drawingAndProjectionin3D.py so that file stays exactly as I wrote it.
-# # ===========================================================================
-# def makeXRotationMatrixMatrix(angle):
-#     cosVal = math.cos(math.radians(angle))
-#     sinVal = math.sin(math.radians(angle))
-#     return numpy.array([[1, 0, 0, 0],
-#                         [0, cosVal, -sinVal, 0],
-#                         [0, sinVal, cosVal, 0],
-#                         [0, 0, 0, 1]], dtype=float)
-
-
-# def makeZRotationMatrix(angle):
-#     cosVal = math.cos(math.radians(angle))
-#     sinVal = math.sin(math.radians(angle))
-#     return numpy.array([[cosVal, 0, sinVal, 0],
-#                         [0, 1, 0, 0],
-#                         [-sinVal, 0, cosVal, 0],
-#                         [0, 0, 0, 1]], dtype=float)
-
-
-# def makeTranslation(dx, dy, dz):
-#     return numpy.array([[1, 0, 0, dx],
-#                         [0, 1, 0, dy],
-#                         [0, 0, 1, dz],
-#                         [0, 0, 0, 1]], dtype=float)
-
 
 # Trim a line to the window rectangle, returning None if it misses entirely.
 # Without this, an edge clipped at the near plane projects to coordinates in
@@ -511,7 +480,8 @@ class Field:
         # above -- each container sorts its own edges/faces internally, it
         # just doesn't interleave with the field's painter's-algorithm pass.
         for container in self.containers:
-            container.draw(app, camera, cx, cy)
+            if not container.isConnected:
+                container.draw(app, camera, cx, cy)
 
     def depthOpacity(self, depth, camera, faintest=22):
         # Distant geometry fades out, so the far end of the hall reads as far
@@ -563,7 +533,6 @@ class Field:
         y = min(-margin, max(self.ceilingAt(z) + margin, y))
         return x, y, z
 
-# ---- START CLAUDE (EXEMPTED) ---------------------------------------------
 import math
 from cmu_graphics import *
 
@@ -607,4 +576,3 @@ class Ground:
             points.append(sx)
             points.append(sy)
         drawPolygon(*points, fill='black', opacity=opacity)
-# ---- END CLAUDE ----------------------------------------------------------

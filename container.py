@@ -1,16 +1,24 @@
 from drawingAndProjectionin3D import *
 from cmu_graphics import *
 import numpy
+import copy
 
 class Container:
-    def __init__(self, leftX, rightX, bottomY, topY, closeZ, farZ):
-        self.containerLeftX   = leftX
-        self.containerRightX  = rightX
+    def __init__(self, app, leftX, rightX, bottomY, topY, closeZ, farZ):
+        self.containerLeftX = leftX
+        self.containerRightX = rightX
         self.containerBottomY = bottomY
-        self.containerTopY    = topY
-        self.containerCloseZ  = closeZ
-        self.containerFarZ    = farZ
+        self.containerTopY = topY
+        self.containerCloseZ = closeZ
+        self.containerFarZ = farZ
+        self.containerWidth = abs(self.containerLeftX - self.containerRightX)
+        self.containerHeight = abs(self.containerBottomY - self.containerTopY)
         self.color = 'red'
+
+        # self.connectedProjection = []
+        # self.connectedProjection.extend(makeShape(self.containerWidth*(1/2**0.5), 4, 0, 0, 0))
+        # self.connectedProjection.extend(makeShape(self.containerWidth*(1/2**0.5), 4, 0, 0, 10))
+        # self.connectedProjection = project(copy.deepcopy(self.connectedProjection), app.avr.pitch, app.avr.roll)
 
         self.points = []
         self.edges  = []
@@ -22,28 +30,35 @@ class Container:
 
     def connectContainer(self, app):
         self.isConnected = True
-        containerWidth = abs(self.containerLeftX - self.containerRightX)
-        containerHeight = abs(self.containerBottomY - self.containerTopY)
-        self.containerLeftX = app.avr.droneX - containerWidth/2
-        self.containerRightX = app.avr.droneX + containerWidth/2
-        self.containerTopY = app.avr.droneY
-        self.containerBottomY = app.avr.droneY + containerHeight
-        self.containerCloseZ = app.avr.droneZ-50
-        self.containerFarZ = app.avr.droneZ
-        self.buildContainer()
+        self.containerLeftX = app.avr.droneX - self.containerWidth/2
+        self.containerRightX = app.avr.droneX + self.containerWidth/2
+        self.containerTopY = app.avr.droneY-self.containerHeight
+        self.containerBottomY = self.containerTopY + self.containerHeight
+        self.containerCloseZ = app.avr.droneZ-100   #Arbitrary translation to help with depth perception when connected.
+        self.containerFarZ = app.avr.droneZ-125
+
+        self.connectedProjection = []
+        self.connectedProjection.extend(makeShape(self.containerWidth*(2**0.5), 4, 0, 0, 0))
+        self.connectedProjection.extend(makeShape(self.containerWidth*(2**0.5), 4, 0, 0, -25))
+        self.connectedProjection = project(copy.deepcopy(self.connectedProjection), app.avr.pitch, app.avr.roll)
+        #Call different method here
+        #self.connectedBuildContainer()
+        #self.buildContainer()
 
     def fallingContainer(self):
         containerHeight = self.containerTopY-self.containerBottomY
 
         #The signs are backwards here b/c Claude wrote the field horribly. It has
         #a higher altitude being a more negative number :(
-        if self.containerBottomY-5 <= containerHeight/2:
+        if self.containerBottomY-5 <= 0:
             self.containerBottomY += 5
             self.containerTopY += 5
         else:
             self.containerBottomY = 0
+            self.containerTopY = -containerHeight
             self.isFalling = False
-        self.buildContainer()
+        self.buildContainer() #Transfers back to Claude projection logic b/c
+        #container is now a part of the field
 
 
 ###REST OF THIS FILE IS EXEMPTED: This is Claude implementing the same draw logic
@@ -59,6 +74,7 @@ class Container:
     def addFace(self, indices, color):
         self.faces.append((indices, color))
 
+    #This is when the container behaves as part of the field
     def buildContainer(self):
         self.points = []
         self.edges  = []
