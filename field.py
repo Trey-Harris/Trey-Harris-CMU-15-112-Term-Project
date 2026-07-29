@@ -1,7 +1,5 @@
-# CITATION: This entire file was written by Claude. 
+# CITATION: This entire file was written by Claude Opus. 
 # I AM EXEMPTING THIS CODE!!!
-
-
 
 # field.py
 # ---------------------------------------------------------------------------
@@ -255,6 +253,14 @@ class Field:
         # Transposed to (4, N) so the whole field transforms in one matmul.
         self.pointArray = numpy.array(self.points, dtype=float).T
 
+        # Objects placed in the field but not part of its static geometry --
+        # e.g. Container instances. Field just holds and draws them; it
+        # doesn't know anything about what a container is or does.
+        self.containers = []
+
+    def addContainer(self, container):
+        self.containers.append(container)
+
     # -------------------------------------------------------------------
     # Geometry construction
     # -------------------------------------------------------------------
@@ -452,6 +458,13 @@ class Field:
                 drawPolygon(*flattened, fill=color,
                             opacity=self.depthOpacity(depth, camera, 58))
 
+        # Draw anything placed in the field after the field's own geometry.
+        # Kept as a separate pass rather than merged into the shapes list
+        # above -- each container sorts its own edges/faces internally, it
+        # just doesn't interleave with the field's painter's-algorithm pass.
+        for container in self.containers:
+            container.draw(app, camera, cx, cy)
+
     def depthOpacity(self, depth, camera, faintest=22):
         # Distant geometry fades out, so the far end of the hall reads as far
         # away instead of as clutter.
@@ -502,6 +515,7 @@ class Field:
         y = min(-margin, max(self.ceilingAt(z) + margin, y))
         return x, y, z
 
+# ---- START CLAUDE (EXEMPTED) ---------------------------------------------
 import math
 from cmu_graphics import *
 
@@ -545,3 +559,4 @@ class Ground:
             points.append(sx)
             points.append(sy)
         drawPolygon(*points, fill='black', opacity=opacity)
+# ---- END CLAUDE ----------------------------------------------------------

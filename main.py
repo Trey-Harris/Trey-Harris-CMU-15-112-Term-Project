@@ -27,7 +27,10 @@ def onAppStart(app):
     app.avr = Drone(app, 5)   #12 is the zDepth
 
     #START CLAUDE (EXEMPT):
-    app.field  = Field()
+    app.field = Field()
+    app.field.addContainer(Container(-800, -700, 0, -40, -25, 25)) 
+    #def __init__(self, leftX, rightX, bottomY, topY, closeZ, farZ, color='saddleBrown'):
+
     app.avr.droneX, app.avr.droneY, app.avr.droneZ = app.field.startPosition()
 
     app.ground = Ground()
@@ -41,9 +44,9 @@ def onAppStart(app):
     app.propGuards = [propGuard1, propGuard2, propGuard3, propGuard4]
 
     #Container Vars
-    app.container1 = Container(app, app.field.fieldLength-300, 
-                        app.field.fieldLength-200, app.field.fieldDepth+50, app.field.fieldDepth+100, 10, 40)
-    app.containers = [app.container1]
+    # app.container1 = Container(app, app.field.fieldLength-300, 
+    #                     app.field.fieldLength-200, app.field.fieldDepth+50, app.field.fieldDepth+100, 10, 40)
+    # app.containers = [app.container1]
 
    
 def onKeyPress(app, key):
@@ -55,6 +58,8 @@ def onKeyPress(app, key):
         app.container1.fallingContainer(app)
 
 def onKeyHold(app, keys):
+    #UNIVERSAL DESIGN: Can use controller and keys
+
     #Next 4 lines Claude
     if 'up' in keys:
         app.avr.droneY -= 4        # y is negative-up, so this climbs
@@ -142,9 +147,11 @@ def redrawAll(app):
 
     #Field (just this line is Claude)
     app.field.draw(app, app.camera, app.width/2, app.height/2)
+    #Also updates container cords
 
     #Container
-    drawPrism(4, app.container1.projectedContainerCords, app.width/4, app.height/4, 'red')
+    #app.container1.draw(app, app.camera, app.width/2, app.height/2)
+    #drawPrism(4, app.container1.projectedContainerCords, app.width/4, app.height/4, 'red')
 
     for propGuard in app.propGuards:    #gets each PropGuard instance from a list
         drawPrism(propGuard.propGuardEdges, propGuard.projectedCords, app.avr.screenX, app.avr.screenY, 'black')
