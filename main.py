@@ -49,6 +49,10 @@ def onAppStart(app):
     #                     app.field.fieldLength-200, app.field.fieldDepth+50, app.field.fieldDepth+100, 10, 40)
     # app.containers = [app.container1]
 
+
+# def start_redrawAll(app):
+#     drawLabel('hi', app.width/2, app.height/2)
+
    
 def onKeyPress(app, key):
     if key == 'space':
@@ -59,10 +63,8 @@ def onKeyPress(app, key):
 
 def onKeyHold(app, keys):
     #UNIVERSAL DESIGN: Can use controller and keys
-
-    #Next 4 lines Claude
     if 'up' in keys:
-        app.avr.droneY -= 4        # y is negative-up, so this climbs
+        app.avr.droneY -= 4        # y is negative-up, why do you do this to me Claude
     if 'down' in keys:
         app.avr.droneY += 4
 
@@ -89,6 +91,9 @@ def onStep(app):
     updateContainers(app)
 
 def updateDronePosition(app):
+    
+    app.avr.projectedCubeCords = app.avr.makeCenterCube()
+
     if -45<=app.avr.roll<=45:
         app.avr.roll += app.leftRightAxis*2 #x2 to get more snappy flight feel
         #Need these checks b/c could scale by 1.6 and go beyond limit
@@ -148,12 +153,6 @@ def updateContainers(app):
         propGuard.makePropGuard(propGuard.zDepth)
         propGuard.makePropGuard(propGuard.zDepth+10)
         propGuard.projectedCords = project(copy.deepcopy(propGuard.propGuardCords), app.avr.pitch, app.avr.roll)
-
-    #MAKE A FUNCTION FOR THIS
-    app.avr.projectedCubeCords = []
-    app.avr.projectedCubeCords.extend(makeShape(app.avr.cubeSize, 4, 0, 0, app.avr.zDepth))
-    app.avr.projectedCubeCords.extend(makeShape(app.avr.cubeSize, 4, 0, 0, app.avr.zDepth+10))
-    app.avr.projectedCubeCords = project(copy.deepcopy(app.avr.projectedCubeCords), app.avr.pitch, app.avr.roll)
 
 def redrawAll(app):
     drawLabel('Use WASD for tilt if no controller connected', app.width/2, 50)

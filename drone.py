@@ -14,11 +14,14 @@ class Drone:
         self.droneZ = -900 
         self.screenX = app.width/2
         self.screenY = app.height/2
-        self.projectedCubeCords = []
-        self.projectedCubeCords.extend(makeShape(self.cubeSize, 4, 0, 0, zDepth))
-        self.projectedCubeCords.extend(makeShape(self.cubeSize, 4, 0, 0, zDepth+10))
-        self.projectedCubeCords = project(copy.deepcopy(self.projectedCubeCords), self.pitch, self.roll)
-        
+        self.projectedCubeCords = self.makeCenterCube()
+
+    def makeCenterCube(self):
+        temp = []
+        temp.extend(makeShape(self.cubeSize, 4, 0, 0, self.zDepth))
+        temp.extend(makeShape(self.cubeSize, 4, 0, 0, self.zDepth+10))
+        temp = project(copy.deepcopy(temp), self.pitch, self.roll)
+        return temp
  
 #Easier to define as a class b/c there are 4 of them with very similar attributes.
 #(instead of making part of one huge Drone class)
@@ -31,7 +34,7 @@ class PropGuard:
         self.propGuardEdges = 8
         self.propCx = app.avr.droneX+(self.offsetRadius*math.cos(math.radians(app.avr.roll)))
         self.propCy = app.avr.droneY+(self.offsetRadius*math.sin(math.radians(app.avr.roll)))
-        
+
         self.propGuardCords = []
         self.makePropGuard(self.zDepth)
         self.makePropGuard(self.zDepth+10)
