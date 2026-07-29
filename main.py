@@ -24,11 +24,13 @@ def onAppStart(app):
     #Drone vars
     # app.avr.pitch = 40
     # app.avr.roll = 0
-    app.avr = Drone(app, 12)   #12 is the zDepth
+    app.avr = Drone(app, 5)   #12 is the zDepth
 
     #START CLAUDE (EXEMPT):
     app.field  = Field()
     app.avr.droneX, app.avr.droneY, app.avr.droneZ = app.field.startPosition()
+
+    app.ground = Ground()
     #END CLAUDE
 
  #Prop guard vars
@@ -69,10 +71,64 @@ def onKeyHold(app, keys):
     #tilting left and right
     if 'd' in keys:            
         if app.avr.roll <= 45:
-            app.avr.roll += 0.5
+            app.avr.roll += 1.5
     if 'a' in keys:
         if app.avr.roll >= -45:
-            app.avr.roll -= 0.5
+            app.avr.roll -= 1.5
+
+def onStep(app):
+    # print(app.container1.isConnected)
+    if app.connectedController:
+        updateController(app, app.controller)
+
+    app.avr.roll += app.leftRightAxis
+    app.avr.pitch += app.forwardBackwardAxis
+
+    app.avr.droneZ += (app.avr.pitch-60) * 0.5   # Arbitrary scale for flight feel
+    app.avr.droneX += app.avr.roll * 0.3
+
+    #START CLAUDE (EXEMPTED CODE)
+    app.avr.droneX, app.avr.droneY, app.avr.droneZ = app.field.clampToArena(
+        app.avr.droneX, app.avr.droneY, app.avr.droneZ, 0)
+    
+    app.camera.follow(app.avr.droneX, app.avr.droneY, app.avr.droneZ)
+
+    app.avr.screenX, app.avr.screenY = app.camera.worldToScreen(
+        app.avr.droneX, app.avr.droneY, app.avr.droneZ, app.width/2, app.height/2)
+    #END CLAUDE (ALL CODE BELOW IS MY OWN)
+
+    print(app.avr.droneY)
+
+    #check container connection: THIS CODE BREAKS EVERYTHING, REWRITE!!!
+    # for container in app.containers:
+    #     if container.isFalling:
+    #         container.fallingContainer(app)
+
+    #     if  container.containerCy <= app.avr.droneCy + app.avr.cubeSize:
+    #         container.connectContainer(app.avr)
+
+    #     if container.isConnected == True:
+    #         container.connectContainer(app.avr)
+
+    #MAKE THE FOLLOWING THEIR OWN FUNCTIONS B/C REPEATED
+    app.stepsTaken += 1
+    for propGuard in app.propGuards:
+        propGuard.propGuardCords = []
+        propGuard.makePropGuard(propGuard.zDepth)
+        propGuard.makePropGuard(propGuard.zDepth+10)
+        propGuard.projectedCords = project(copy.deepcopy(propGuard.propGuardCords), app.avr.pitch, app.avr.roll)
+
+
+    app.avr.projectedCubeCords = []
+    #self.projectedCubeCords = self.computeCube(app)
+    app.avr.makeCenterCube(app.avr.zDepth) #probably don't need a function for this.
+    app.avr.makeCenterCube(app.avr.zDepth+10)
+    app.avr.projectedCubeCords = project(copy.deepcopy(app.avr.projectedCubeCords), app.avr.pitch, app.avr.roll)
+    # app.avr.projectedCubeCords = []
+    # app.avr.projectedCubeCords = app.avr.computeCube(app)
+    # app.avr.makeCenterCube(app.avr.zDepth)
+    # app.avr.makeCenterCube(app.avr.zDepth+10)
+    # app.avr.projectedCubeCords = project(copy.deepcopy(app.avr.projectedCubeCords), app.avr.roll, app.avr.pitch)
 
 def redrawAll(app):
     drawLabel('Use WASD for tilt if no controller connected', app.width/2, 50)
@@ -89,6 +145,10 @@ def redrawAll(app):
         drawPrism(propGuard.propGuardEdges, propGuard.projectedCords, app.avr.screenX, app.avr.screenY)
     #Drone center
     drawPrism(4, app.avr.projectedCubeCords, app.avr.screenX, app.avr.screenY)
+
+    #CLAUDE:
+    app.ground.draw(app.camera, app.width/2, app.height/2)
+    app.ground.drawShadow(app.camera, app.avr, app.width/2, app.height/2)
 
 #Citation: Gemini helped with completing the shape (suggested to use % to 
 #connect index 7 with index 0)
@@ -110,51 +170,5 @@ def drawPrism(numSides, cords, cx, cy):
 
         # Connects the two faces together
         drawLine(x1, y1, x3, y3)
-
-def onStep(app):
-    # print(app.container1.isConnected)
-    if app.connectedController:
-        updateController(app, app.controller)
-
-    app.avr.roll += app.leftRightAxis
-    app.avr.pitch += app.forwardBackwardAxis
-
-    #START CLAUDE (EXEMPTED CODE)
-    app.avr.droneZ += (app.avr.pitch-60) * 0.5   # 60 is your neutral
-    app.avr.droneX += app.avr.roll * 0.3
-
-    app.avr.droneX, app.avr.droneY, app.avr.droneZ = app.field.clampToArena(
-        app.avr.droneX, app.avr.droneY, app.avr.droneZ, 60)
-    
-    app.camera.follow(app.avr.droneX, app.avr.droneY, app.avr.droneZ)
-
-    app.avr.screenX, app.avr.screenY = app.camera.worldToScreen(
-        app.avr.droneX, app.avr.droneY, app.avr.droneZ, app.width/2, app.height/2)
-    #END CLAUDE (ALL CODE BELOW IS MY OWN)
-
-    #check container connection: THIS CODE BREAKS EVERYTHING, REWRITE!!!
-    # for container in app.containers:
-    #     if container.isFalling:
-    #         container.fallingContainer(app)
-
-    #     if  container.containerCy <= app.avr.droneCy + app.avr.cubeSize:
-    #         container.connectContainer(app.avr)
-
-    #     if container.isConnected == True:
-    #         container.connectContainer(app.avr)
-
-    #MAKE THE FOLLOWING THEIR OWN FUNCTIONS B/C REPEATED
-    app.stepsTaken += 1
-    for propGuard in app.propGuards:
-        propGuard.propGuardCords = []
-        propGuard.makePropGuard(propGuard.zDepth)
-        propGuard.makePropGuard(propGuard.zDepth+10)
-        propGuard.projectedCords = project(copy.deepcopy(propGuard.propGuardCords), app.avr.pitch, app.avr.roll)
-  
-    app.avr.projectedCubeCords = []
-    app.avr.projectedCubeCords = app.avr.computeCube(app)
-    # app.avr.makeCenterCube(app.avr.zDepth)
-    # app.avr.makeCenterCube(app.avr.zDepth+10)
-    # app.avr.projectedCubeCords = project(copy.deepcopy(app.avr.projectedCubeCords), app.avr.roll, app.avr.pitch)
 
 runApp()

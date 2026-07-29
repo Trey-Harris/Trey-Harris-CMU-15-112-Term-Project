@@ -6,7 +6,7 @@ import copy
 #Holds the center cube as well
 class Drone:
     def __init__(self, app, zDepth):
-        self.cubeSize = 20
+        self.cubeSize = 40 #Approx 100*sqrt(2)
         self.zDepth = zDepth
         self.roll = 0
         self.pitch = 60
@@ -16,7 +16,10 @@ class Drone:
         self.screenX = app.width/2
         self.screenY = app.height/2
         self.projectedCubeCords = []
-        self.projectedCubeCords = self.computeCube(app)
+        #self.projectedCubeCords = self.computeCube(app)
+        self.makeCenterCube(self.zDepth) #probably don't need a function for this.
+        self.makeCenterCube(self.zDepth+10)
+        self.projectedCubeCords = project(copy.deepcopy(self.projectedCubeCords), self.pitch, self.roll)
         
 
     def computeCube(self, app):
@@ -45,10 +48,10 @@ class Drone:
 #(instead of making part of one huge Drone class)
 class PropGuard:
     def __init__(self, app, drawAngle, zDepth):
-        self.offsetRadius = 50
+        self.offsetRadius = 100
         self.zDepth = zDepth
         self.drawAngle = drawAngle
-        self.propRadius = 20
+        self.propRadius = 50
         self.propGuardEdges = 8
         self.propCx = app.avr.droneX+(self.offsetRadius*math.cos(math.radians(app.avr.roll)))
         self.propCy = app.avr.droneY+(self.offsetRadius*math.sin(math.radians(app.avr.roll)))

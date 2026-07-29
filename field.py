@@ -141,7 +141,7 @@ class ChaseCamera:
         # along behind. Change this once if you want a different fixed facing;
         # 0 looks down +z, which is the length of the hall.
         self.heading  = 0
-        self.distance = 300         # how far behind the drone it sits
+        self.distance = 500         # how far behind the drone it sits
         self.height   = 130         # how far above it sits
 
         # Focal length sets the field of view. Bigger = more zoomed in.
@@ -499,3 +499,49 @@ class Field:
         z = min(limitZ, max(-limitZ, z))
         y = min(-margin, max(self.ceilingAt(z) + margin, y))
         return x, y, z
+
+# ---- START CLAUDE (EXEMPTED) ---------------------------------------------
+import math
+from cmu_graphics import *
+
+class Ground:
+    def __init__(self, halfSize=1800, spacing=150, groundY=0):
+        self.halfSize = halfSize    # grid extends +/- this far in X and Z
+        self.spacing  = spacing     # gap between grid lines
+        self.groundY  = groundY     # world Y of the floor plane
+
+    def drawWorldLine(self, camera, x1, z1, x2, z2, cx, cy):
+        sx1, sy1 = camera.worldToScreen(x1, self.groundY, z1, cx, cy)
+        sx2, sy2 = camera.worldToScreen(x2, self.groundY, z2, cx, cy)
+        drawLine(sx1, sy1, sx2, sy2, fill='gray', lineWidth=1, opacity=35)
+
+    def draw(self, camera, cx, cy):
+        n = int(self.halfSize / self.spacing)
+        for i in range(-n, n + 1):
+            v = i * self.spacing
+            # lines running along Z (constant X)
+            self.drawWorldLine(camera, v, -self.halfSize, v, self.halfSize, cx, cy)
+            # lines running along X (constant Z)
+            self.drawWorldLine(camera, -self.halfSize, v, self.halfSize, v, cx, cy)
+
+    def drawShadow(self, camera, drone, cx, cy):
+        height = abs(drone.droneY - self.groundY)
+        maxHeight = 600
+        t = min(height / maxHeight, 1)
+
+        radius  = 110 * (1 - 0.55 * t)   # tightens as the drone descends
+        opacity = 55  * (1 - t)          # darkens as the drone descends
+        if opacity <= 2:
+            return
+
+        points = []
+        steps = 16
+        for i in range(steps):
+            angle = math.radians(360 * i / steps)
+            wx = drone.droneX + radius * math.cos(angle)
+            wz = drone.droneZ + radius * math.sin(angle)
+            sx, sy = camera.worldToScreen(wx, self.groundY, wz, cx, cy)
+            points.append(sx)
+            points.append(sy)
+        drawPolygon(*points, fill='black', opacity=opacity)
+# ---- END CLAUDE ----------------------------------------------------------
