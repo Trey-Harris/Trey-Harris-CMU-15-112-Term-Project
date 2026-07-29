@@ -20,15 +20,29 @@ def makeShape(radius, numEdges, dispX, dispY, zDepth):
 #https://numpy.org/devdocs/reference/generated/numpy.matmul.html#numpy.matmul
 def project(app, cords):
     projectedCords = []
-    projectAndRotateMatrix = numpy.matmul(app.projectionMatrix, makeXRotationMatrix(app.forwardTiltAngle))
-    projectAndRotateMatrix = numpy.matmul(projectAndRotateMatrix, makeZRotationMatrix(app.sideTiltAngle))
+    transformedMatrix = numpy.matmul(makeProjectionMatrix(), makeXRotationMatrix(app.forwardTiltAngle))
+    transformedMatrix = numpy.matmul(transformedMatrix, makeZRotationMatrix(app.sideTiltAngle))
     for i in range(len(cords)):
-        projectedPoint = numpy.matmul(projectAndRotateMatrix, cords[i])
+        projectedPoint = numpy.matmul(transformedMatrix, cords[i])
         projectedCords.append(projectedPoint)
     return projectedCords
 
+def makeTranslation(matrix, dx, dy, dz):
+    numpy.matmul(matrix, makeTranslationMatrix(dx, dy, dz))
+
+
+
+
 ###Projection Matricies: Learned the style of matrix from Eric, Googled the actual ones
 
+#Orthographic Projection Matrix, flattens into 2D space and keeps lines parallel
+def makeProjectionMatrix():
+    return[
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 1, 0]
+    ] 
 #Rotates about x-axis (pitch)
 def makeXRotationMatrix(angle):
     cosVal = math.cos(math.radians(angle))
@@ -51,7 +65,7 @@ def makeZRotationMatrix(angle):
         [0, 0, 0, 1]
     ]
 
-def translateMatrix(dx, dy, dz):
+def makeTranslationMatrix(dx, dy, dz):
     return[
         [1, 0, 0, dx],
         [0, 1, 0, dy],

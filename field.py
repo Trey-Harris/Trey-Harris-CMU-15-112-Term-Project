@@ -181,7 +181,7 @@ class ChaseCamera:
         cameraX, cameraY, cameraZ = self.getPosition()
         matrix = numpy.matmul(makeXRotationMatrix(self.getPitch()),
                               makeZRotationMatrix(-self.heading))
-        return numpy.matmul(matrix, translateMatrix(-cameraX, -cameraY, -cameraZ))
+        return numpy.matmul(matrix, makeTranslationMatrix(-cameraX, -cameraY, -cameraZ))
 
     # Every point in one numpy call instead of one call per point. pointArray
     # is shape (4, N); the result is camera space, where z is depth ahead.

@@ -10,13 +10,7 @@ def onAppStart(app):
     app.width = 1200
     app.height = 600
     app.stepsTaken = 0
-    #THIS NEEDS TO BE MOVED AND CITED FROM ERIC
-    app.projectionMatrix = [
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, 1, 0],
-            [0, 0, 1, 0]
-    ] #Can multiply by itendity matrix (+ translations in w) to make translations later if need to
+  
     #Controller vars
     app.connectedController = False
     app.controller = setupController(app)
