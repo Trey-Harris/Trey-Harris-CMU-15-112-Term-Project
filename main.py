@@ -16,8 +16,16 @@ def onAppStart(app):
 def resetApp(app):
     #Game (not its own class b/c takes info from so many other classes, so 
     #its cleaner if integrated in main)
-    app.points = 0
+    app.points = 80
     app.messages = ''
+    app.gameOver = False
+    app.scores = [
+        ['Team Appreciate', 60],
+        ['Skywalkers Academy', 58],
+        ['Daedalus', 55],
+        ['Team Rush', 47],
+        ['Horsepower', 28]
+    ]
   
     #CLAUDE
     app.camera = ChaseCamera()
@@ -61,7 +69,9 @@ def resetApp(app):
 # def start_redrawAll(app):
 #     drawLabel('hi', app.width/2, app.height/2)
 
-   
+def gameOver(app, message):
+    app.gameOver = True 
+
 def onKeyPress(app, key):
     if key == 'space':
         for container in app.field.containers:
@@ -70,6 +80,11 @@ def onKeyPress(app, key):
                 container.isConnected = False
                 container.isFalling = True
                 container.fallingContainer(app)
+    if key == 'p':
+        app.gameOver = not app.gameOver
+
+    if key == 'r':
+        resetApp(app)
 
 def onKeyHold(app, keys):
     #UNIVERSAL DESIGN: Can use controller and keys
@@ -133,7 +148,7 @@ def updateDronePosition(app):
 
 
     #START EXEMPTED CODE (for camera updates in field code)
-    app.avr.droneX, app.avr.droneY, app.avr.droneZ = app.field.clampToArena(
+    app.avr.droneX, app.avr.droneY, app.avr.droneZ = app.field.clampToArena(app, 
         app.avr.droneX, app.avr.droneY, app.avr.droneZ)
     
     app.camera.follow(app.avr.droneX, app.avr.droneY, app.avr.droneZ)
@@ -177,31 +192,40 @@ def updateContainers(app):
         propGuard.makePropGuard(propGuard.zDepth+10)
         propGuard.projectedCords = project(copy.deepcopy(propGuard.propGuardCords), app.avr.pitch, app.avr.roll)
 
+
 def redrawAll(app):
-    drawLabel('Use WASD for tilt if no controller connected', app.width/2, 50)
-    drawLabel(app.stepsPerSecond, app.width/2, 70)
+    if app.gameOver:
+        drawRect(0, 0, app.width, app.height, fill='white') #cmu_graphics doesn't
+        #let me make a screen with key controls in my app :(
+        drawLabel('You hit a field element and shredded your propellors :(', app.width/2, 20)
+        displayLeaderboard(app)
+        drawLabel('Press r to restart', app.width/2, app.height-20)
 
-    y = 5
-    for line in app.messages.splitlines():
-        drawLabel(line, 10, y, align='left-top',size=16, fill='fireBrick')
-        y+=16
-    
-    #EXEMPTED NEXT 3 LINES (Part of field):
-    app.field.draw(app, app.camera, app.width/2, app.height/2)
-    app.ground.draw(app.camera, app.width/2, app.height/2)
-    app.ground.drawShadow(app.camera, app.avr, app.width/2, app.height/2)
+    else:
+        drawLabel('Use WASD for tilt if no controller connected', app.width/2, 50)
+        drawLabel(app.stepsPerSecond, app.width/2, 70)
 
-    #Drawing Container
-    for container in app.field.containers:
-        if container.isConnected:
-            drawPrism(4, container.connectedProjection, app.avr.screenX, app.avr.screenY, 'fireBrick')
+        y = 5
+        for line in app.messages.splitlines():
+            drawLabel(line, 10, y, align='left-top',size=16, fill='fireBrick')
+            y+=16
+        
+        #EXEMPTED NEXT 3 LINES (Part of field):
+        app.field.draw(app, app.camera, app.width/2, app.height/2)
+        app.ground.draw(app.camera, app.width/2, app.height/2)
+        app.ground.drawShadow(app.camera, app.avr, app.width/2, app.height/2)
 
-    #Drawing Prop Guards
-    for propGuard in app.propGuards:    #gets each PropGuard instance from a list
-        drawPrism(propGuard.propGuardEdges, propGuard.projectedCords, app.avr.screenX, app.avr.screenY, 'black')
+        #Drawing Container
+        for container in app.field.containers:
+            if container.isConnected:
+                drawPrism(4, container.connectedProjection, app.avr.screenX, app.avr.screenY, 'fireBrick')
 
-    #Drawing Drone Center
-    drawPrism(4, app.avr.projectedCubeCords, app.avr.screenX, app.avr.screenY, 'black')
+        #Drawing Prop Guards
+        for propGuard in app.propGuards:    #gets each PropGuard instance from a list
+            drawPrism(propGuard.propGuardEdges, propGuard.projectedCords, app.avr.screenX, app.avr.screenY, 'black')
+
+        #Drawing Drone Center
+        drawPrism(4, app.avr.projectedCubeCords, app.avr.screenX, app.avr.screenY, 'black')
 
 
 #Citation: Gemini suggested to use % to connect index 7 with index 0, but the 
@@ -224,5 +248,12 @@ def drawPrism(numSides, cords, cx, cy, color):
 
         # Connects the two faces together
         drawLine(x1, y1, x3, y3, fill=color)
+
+def displayLeaderboard(app):   
+    leaderboard = sorted(copy.deepcopy(app.scores), key = lambda x: x[1], reverse=True)
+    screenPosY = 50
+    for team in leaderboard:
+        drawLabel(f'{team[0]} ----- {team[1]}', app.width/2, screenPosY)
+        screenPosY += 25
 
 runApp()

@@ -244,6 +244,7 @@ class Field:
         self.points = []
         self.edges  = []        # (indexA, indexB, colour, lineWidth)
         self.faces  = []        # (list of point indices, fill colour)
+        self.dropZoneFaces = []
         self.buildGround()
         self.buildCage()
         self.buildBarrier()
@@ -445,9 +446,9 @@ class Field:
         # not drawn at its exact bounds, so it can be made a bit bigger
         # than the container without the math being scattered per-zone.
         rightContainers = [
-            (700, 800, 275, 325),
-            (300, 400, 275, 325),
-            (400, 500, -25,  25),
+            (700, 800, 230, 260),
+            (300, 400, 230, 260),
+            (400, 500, 30,  60),
         ]
         #    app.field.addContainer(Container(app, 700, 800, 0, -20, 230, 260, 'container1')) 
         #     app.field.addContainer(Container(app, 300, 400, 0, -20, 230, 260, 'container2'))
@@ -471,20 +472,15 @@ class Field:
             self.addDropZone(-centerX, centerZ)   # mirrored across the barrier
 
     def addDropZone(self, centerX, centerZ):
-        # Drawn as a single flat face, not a grid of panels like buildGround
-        # -- these are small enough, and few enough, that one quad per zone
-        # doesn't have the same "sorts as one unit and punches through
-        # things" problem the ground and barrier were built to avoid.
-        # Lifted a hair above y=0 so it doesn't z-fight with the ground
-        # panel directly beneath it.
         halfWidth = self.dropZoneWidth / 2
         halfDepth = self.dropZoneDepth / 2
         y = -1
-        self.addFace([self.addPoint(centerX - halfWidth, y, centerZ - halfDepth),
-                      self.addPoint(centerX + halfWidth, y, centerZ - halfDepth),
-                      self.addPoint(centerX + halfWidth, y, centerZ + halfDepth),
-                      self.addPoint(centerX - halfWidth, y, centerZ + halfDepth)],
-                     self.dropZoneColor)
+        self.dropZoneFaces.append([
+            self.addPoint(centerX - halfWidth, y, centerZ - halfDepth),
+            self.addPoint(centerX + halfWidth, y, centerZ - halfDepth),
+            self.addPoint(centerX + halfWidth, y, centerZ + halfDepth),
+            self.addPoint(centerX - halfWidth, y, centerZ + halfDepth),
+        ])
 
     # -------------------------------------------------------------------
     # Drawing
@@ -561,6 +557,31 @@ class Field:
                 drawPolygon(*flattened, fill=color,
                             opacity=self.depthOpacity(depth, camera, 58))
 
+        # Drop zones: a 1-unit lift off the ground isn't enough vertical
+        # separation for the painter's-algorithm depth sort to reliably
+        # place them above the ground tile underneath -- they'd sometimes
+        # lose that tie and get fully covered. As a guaranteed top layer
+        # instead, they can't lose that tie.
+        for indices in self.dropZoneFaces:
+            corners = [(xs[i], ys[i], depths[i]) for i in indices]
+            if max(c[2] for c in corners) < near:
+                continue
+            corners = clipPolygonToNearPlane(corners, near)
+            if len(corners) < 3:
+                continue
+            screen = [camera.perspective(c[0], c[1], c[2], cx, cy) for c in corners]
+            screen = clipPolygonToScreen(screen, app.width, app.height)
+            if len(screen) < 3:
+                continue
+            flattened = []
+            for (px, py) in screen:
+                flattened.append(px)
+                flattened.append(py)
+            drawPolygon(*flattened, fill=self.dropZoneColor, opacity=70)
+
+        for container in self.containers:
+            if not container.isConnected and not container.isBroken:
+                container.draw(app, camera, cx, cy) 
         # Draw anything placed in the field after the field's own geometry.
         # Kept as a separate pass rather than merged into the shapes list
         # above -- each container sorts its own edges/faces internally, it
@@ -609,33 +630,43 @@ class Field:
     def startPosition(self):
         return (-700, 0, 150)
 
-    def clampToArena(self, x, y, z, margin=0):
+    def clampToArena(self, app, x, y, z, margin=0):
         limitX = self.fieldLength/2 - margin
         limitZ = self.fieldDepth/2 - margin
         hits = []
 
         if x < -limitX:
             app.gameOver = True
-            #OR gameOver('left wall')
+            app.scores.append(['You', app.points])
             print('left wall')
         elif x > limitX:
+            app.gameOver = True
+            app.scores.append(['You', app.points])
             print('right wall')
         x = min(limitX, max(-limitX, x))
 
-        if z < -50:
+        if z < -limitZ:
+            app.gameOver = True
+            app.scores.append(['You', app.points])
             print('near wall')
         elif z > limitZ:
+            app.gameOver = True
+            app.scores.append(['You', app.points]) 
             print('far wall')
         z = min(limitZ, max(-limitZ, z))
 
         ceiling = self.ceilingAt(z) + margin
         if y < ceiling:
+            app.gameOver = True
+            app.scores.append(['You', app.points]) 
             print('ceiling')
         # elif y > -margin:
         #     print('floor')
         y = min(-margin, max(ceiling, y))
 
         if self.hitsBarrier(x, y, z, margin):
+            app.gameOver = True
+            app.scores.append(['You', app.points]) 
             print('center wall')
             halfThickness = self.barrierThickness/2 + margin
             x = halfThickness if x >= 0 else -halfThickness
