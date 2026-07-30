@@ -11,20 +11,19 @@ def onAppStart(app):
     app.height = 600
     app.stepsTaken = 0
   
+    #CLAUDE
+    app.camera = ChaseCamera()
+
+    #Drone vars
+    app.avr = Drone(app, 5)
+
     #Controller vars
     app.connectedController = False
     app.controller = setupController(app)
     app.leftRightAxis = 0
     app.forwardBackwardAxis = 0
     app.throttle = 0
-
-    #CLAUDE
-    app.camera = ChaseCamera()
-
-    #Drone vars
-    # app.avr.pitch = 40
-    # app.avr.roll = 0
-    app.avr = Drone(app, 5)
+    
 
     #START CLAUDE (EXEMPT):
     app.field = Field()
@@ -64,9 +63,9 @@ def onKeyPress(app, key):
 def onKeyHold(app, keys):
     #UNIVERSAL DESIGN: Can use controller and keys
     if 'up' in keys:
-        app.avr.droneY -= 4        # y is negative-up, why do you do this to me Claude
+        app.throttle += 0.1        # y is negative-up, why do you do this to me Claude
     if 'down' in keys:
-        app.avr.droneY += 4
+        app.throttle -= 0.1
 
     #tilting forward and backward
     if 'w' in keys:
@@ -109,6 +108,12 @@ def updateDronePosition(app):
         if app.avr.pitch<40:
             app.avr.pitch=40
 
+    if app.throttle>app.avr.throttleThreshold:
+        app.avr.droneY -= 5*app.throttle
+
+    if app.throttle<app.avr.throttleThreshold:
+        app.avr.droneY += 5*(app.avr.throttleThreshold-app.throttle)
+
     #Update drone position (w/ scale factors for speed)
     app.avr.droneZ += (app.avr.pitch-60) * 0.5   # Arbitrary scale for better flight characteristics
     app.avr.droneX += app.avr.roll * 0.3
@@ -140,11 +145,11 @@ def updateContainers(app):
             container.isConnected = True
 
         if container.isConnected:
+            app.throttleThreshold = 50
             container.connectContainer(app)
 
         if container.isFalling:
             container.fallingContainer()
-
 
     #MAKE THE FOLLOWING THEIR OWN FUNCTIONS B/C REPEATED
     app.stepsTaken += 1

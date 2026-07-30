@@ -12,6 +12,7 @@ class Drone:
         self.droneX = 0
         self.droneY = -150
         self.droneZ = -900 
+        self.throttleThreshold = 0.5 #~30% of 1.5 (which is throttle max)
         self.screenX = app.width/2
         self.screenY = app.height/2
         self.projectedCubeCords = self.makeCenterCube()
