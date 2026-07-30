@@ -119,6 +119,21 @@ class ChaseCamera:
         self.nearPlane    = 12      # anything closer than this gets clipped
         self.drawDistance = 2600    # geometry past this is skipped entirely
 
+        # Set once the field exists, via setBounds(). Keeps the EYE itself
+        # inside the hall -- not just the drone. Without this, the fixed
+        # trailing offset (self.distance behind, self.height above) can push
+        # the camera through the near wall or above the gabled roof even
+        # while Field.clampToArena is correctly holding the drone's own
+        # position inside. Assumes heading stays 0 (true here -- the drone
+        # never yaws), so "room behind" is a plain Z comparison.
+        self.wallLimitZ    = None
+        self.ceilingFn     = None   # bound Field.ceilingAt, set by setBounds()
+        self.ceilingMargin = 20
+
+    def setBounds(self, field, margin=30):
+        self.wallLimitZ = -(field.fieldDepth/2) + margin
+        self.ceilingFn  = field.ceilingAt
+
     # The camera pitches down by exactly the angle that puts the drone in the
     # middle of the screen, so this is derived rather than stored.
     def getPitch(self):
@@ -128,9 +143,21 @@ class ChaseCamera:
         headingRadians = math.radians(self.heading)
         forwardX = math.sin(headingRadians)
         forwardZ = math.cos(headingRadians)
-        return (self.focusX - forwardX*self.distance,
-                self.focusY - self.height,      # y grows DOWNWARD, so minus is up
-                self.focusZ - forwardZ*self.distance)
+
+        cameraX = self.focusX - forwardX*self.distance
+        cameraY = self.focusY - self.height      # y grows DOWNWARD, so minus is up
+        cameraZ = self.focusZ - forwardZ*self.distance
+
+        # Pin the eye at the boundary instead of letting it cross. Once
+        # cameraZ hits wallLimitZ it stops moving -- from then on, the drone
+        # continuing to close the last stretch to the wall reads as the drone
+        # getting closer to the camera, not the camera getting closer to the wall.
+        if self.wallLimitZ is not None:
+            cameraZ = max(cameraZ, self.wallLimitZ)
+        if self.ceilingFn is not None:
+            cameraY = max(cameraY, self.ceilingFn(cameraZ) + self.ceilingMargin)
+
+        return cameraX, cameraY, cameraZ
 
     def follow(self, targetX, targetY, targetZ):
         # First call of the app: jump straight there. Otherwise the camera
@@ -185,6 +212,7 @@ class Field:
         self.eaveHeight  = 330       # where the side posts stop
         self.ridgeHeight = 470       # the peak of the gabled roof
         self.bayCount    = 10        # hoops spaced along the length
+        self.netSpacing = 45
 
         # ---- Barrier splitting the field in half ---------------------------
         # It stands at x = 0 and runs the full depth, so it cuts the long
@@ -219,6 +247,8 @@ class Field:
         self.buildGround()
         self.buildCage()
         self.buildBarrier()
+        self.buildEndWalls()
+        self.buildSideWalls()
         self.buildDropZones()
 
         # Transposed to (4, N) so the whole field transforms in one matmul.
@@ -314,11 +344,53 @@ class Field:
             for i in range(len(rail) - 1):
                 self.addEdge(rail[i], rail[i+1], self.frameColor, 1)
 
+    def addNetPanel(self, place, hRange, vRange, spacing, color, lineWidth=1):
+        # Chain-link style mesh: two families of diagonal lines criss-crossing
+        # a flat panel, so gaps show through it like a fence instead of a
+        # solid wall. place(h, v) maps panel-local (horizontal, vertical)
+        # coordinates to a 3D world point.
+        h0, h1 = hRange
+        v0, v1 = vRange
+        diag = spacing * (2 ** 0.5)   # step in c so perpendicular gap = spacing
+
+        c = v0 - h1
+        while c <= v1 - h0 + 1e-9:
+            hStart, hEnd = max(h0, v0 - c), min(h1, v1 - c)
+            if hStart < hEnd:
+                a = self.addPoint(*place(hStart, hStart + c))
+                b = self.addPoint(*place(hEnd,   hEnd   + c))
+                self.addEdge(a, b, color, lineWidth)
+            c += diag
+
+        c = v0 + h0
+        while c <= v1 + h1 + 1e-9:
+            hStart, hEnd = max(h0, c - v1), min(h1, c - v0)
+            if hStart < hEnd:
+                a = self.addPoint(*place(hStart, c - hStart))
+                b = self.addPoint(*place(hEnd,   c - hEnd))
+                self.addEdge(a, b, color, lineWidth)
+            c += diag
+
+    def buildSideWalls(self):
+        # Net panels capping the two long ends of the hall (x = +-halfLength) --
+        # same treatment as buildEndWalls(), just on the other axis. clampToArena
+        # already stops the drone here; this gives it something visible to stop
+        # against.
+        halfLength = self.fieldLength / 2
+        halfDepth  = self.fieldDepth / 2
+        topY       = -self.eaveHeight
+
+        for x in (-halfLength, halfLength):
+            place = lambda h, v, x=x: (x, v, h)   # h = z (depth), v = y (height)
+            self.addNetPanel(place, (-halfDepth, halfDepth), (topY, 0),
+                            self.netSpacing, self.barrierColor)
+
+            self.addEdge(self.addPoint(x, topY, -halfDepth),
+                        self.addPoint(x, topY,  halfDepth), self.barrierColor, 2)
+            self.addEdge(self.addPoint(x, 0, -halfDepth),
+                        self.addPoint(x, 0,  halfDepth), self.barrierColor, 2)
+
     def buildBarrier(self):
-        # A solid wall standing at x = 0, running the full depth of the field
-        # and cutting the long axis in half. Built as a run of panels so the
-        # painter's sort in draw() can order it correctly against everything
-        # else in the scene.
         halfDepth     = self.fieldDepth / 2
         halfThickness = self.barrierThickness / 2
         topY          = -self.barrierHeight
@@ -327,32 +399,43 @@ class Field:
         for panel in range(self.barrierPanels):
             nearZ = -halfDepth + panel*step
             farZ  = nearZ + step
-            # The two long sides.
             for x in (-halfThickness, halfThickness):
                 self.addFace([self.addPoint(x, topY, nearZ),
-                              self.addPoint(x, topY, farZ),
-                              self.addPoint(x, 0,    farZ),
-                              self.addPoint(x, 0,    nearZ)], self.barrierFill)
-            # The strip along the top.
+                                self.addPoint(x, topY, farZ),
+                                self.addPoint(x, 0,    farZ),
+                                self.addPoint(x, 0,    nearZ)], self.barrierFill)
             self.addFace([self.addPoint(-halfThickness, topY, nearZ),
-                          self.addPoint( halfThickness, topY, nearZ),
-                          self.addPoint( halfThickness, topY, farZ),
-                          self.addPoint(-halfThickness, topY, farZ)], self.barrierFill)
+                            self.addPoint( halfThickness, topY, nearZ),
+                            self.addPoint( halfThickness, topY, farZ),
+                            self.addPoint(-halfThickness, topY, farZ)], self.barrierFill)
 
-        # Outline: the long top and base edges, plus the ends. This is what
-        # keeps the silhouette crisp once the faces are filled in.
         for x in (-halfThickness, halfThickness):
             self.addEdge(self.addPoint(x, topY, -halfDepth),
-                         self.addPoint(x, topY,  halfDepth), self.barrierColor, 2)
+                            self.addPoint(x, topY,  halfDepth), self.barrierColor, 2)
             self.addEdge(self.addPoint(x, 0, -halfDepth),
-                         self.addPoint(x, 0,  halfDepth), self.barrierColor, 2)
+                            self.addPoint(x, 0,  halfDepth), self.barrierColor, 2)
         for z in (-halfDepth, halfDepth):
             corners = [self.addPoint(-halfThickness, topY, z),
-                       self.addPoint( halfThickness, topY, z),
-                       self.addPoint( halfThickness, 0,    z),
-                       self.addPoint(-halfThickness, 0,    z)]
+                        self.addPoint( halfThickness, topY, z),
+                        self.addPoint( halfThickness, 0,    z),
+                        self.addPoint(-halfThickness, 0,    z)]
             for i in range(4):
                 self.addEdge(corners[i], corners[(i+1) % 4], self.barrierColor, 2)
+
+    def buildEndWalls(self):
+        halfLength = self.fieldLength / 2
+        halfDepth  = self.fieldDepth / 2
+        topY       = -self.eaveHeight   # matches the roofline at the edges
+
+        for z in (-halfDepth, halfDepth):
+            place = lambda h, v, z=z: (h, v, z)   # h = x (length), v = y (height)
+            self.addNetPanel(place, (-halfLength, halfLength), (topY, 0),
+                            self.netSpacing, self.barrierColor)
+
+            self.addEdge(self.addPoint(-halfLength, topY, z),
+                        self.addPoint( halfLength, topY, z), self.barrierColor, 2)
+            self.addEdge(self.addPoint(-halfLength, 0, z),
+                        self.addPoint( halfLength, 0, z), self.barrierColor, 2)
 
     def buildDropZones(self):
         # Painted rectangles on the floor marking where containers should be
@@ -366,6 +449,9 @@ class Field:
             (300, 400, 275, 325),
             (400, 500, -25,  25),
         ]
+        #    app.field.addContainer(Container(app, 700, 800, 0, -20, 230, 260, 'container1')) 
+        #     app.field.addContainer(Container(app, 300, 400, 0, -20, 230, 260, 'container2'))
+        #     app.field.addContainer(Container(app, 400, 500, 0, -20, 30, 60, 'container3'))
 
         # Every zone is the same size: the container's own footprint plus a
         # margin on all sides, so there's room to land without lining up
@@ -516,25 +602,46 @@ class Field:
             return False
         if abs(z) > self.fieldDepth/2 + margin:
             return False
-        return y > -self.barrierHeight - margin
+        return y > -self.barrierHeight + 100
 
     # Where to spawn: in the left half, facing the long back edge, close
     # enough to the barrier that it frames up on the right of the view.
     def startPosition(self):
-        return (-self.fieldLength/6, -150, 0)
+        return (-700, 0, 150)
 
     def clampToArena(self, x, y, z, margin=0):
-        # Cheap way to keep the drone inside: shove it back to the wall it
-        # tried to leave through. Swap for a real bounce when you have time.
         limitX = self.fieldLength/2 - margin
         limitZ = self.fieldDepth/2 - margin
+        hits = []
+
+        if x < -limitX:
+            app.gameOver = True
+            #OR gameOver('left wall')
+            print('left wall')
+        elif x > limitX:
+            print('right wall')
         x = min(limitX, max(-limitX, x))
+
+        if z < -50:
+            print('near wall')
+        elif z > limitZ:
+            print('far wall')
         z = min(limitZ, max(-limitZ, z))
-        y = min(-margin, max(self.ceilingAt(z) + margin, y))
+
+        ceiling = self.ceilingAt(z) + margin
+        if y < ceiling:
+            print('ceiling')
+        # elif y > -margin:
+        #     print('floor')
+        y = min(-margin, max(ceiling, y))
+
+        if self.hitsBarrier(x, y, z, margin):
+            print('center wall')
+            halfThickness = self.barrierThickness/2 + margin
+            x = halfThickness if x >= 0 else -halfThickness
+
         return x, y, z
 
-import math
-from cmu_graphics import *
 
 class Ground:
     def __init__(self, halfSize=1800, spacing=150, groundY=0):

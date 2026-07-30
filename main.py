@@ -10,7 +10,10 @@ def onAppStart(app):
     app.width = 1200
     app.height = 600
     app.stepsTaken = 0
+    app.gameOver = False
+    resetApp(app)
 
+def resetApp(app):
     #Game (not its own class b/c takes info from so many other classes, so 
     #its cleaner if integrated in main)
     app.points = 0
@@ -32,6 +35,7 @@ def onAppStart(app):
 
     #START CLAUDE (EXEMPT):
     app.field = Field()
+    app.camera.setBounds(app.field)
     app.field.addContainer(Container(app, 700, 800, 0, -20, 230, 260, 'container1')) 
     app.field.addContainer(Container(app, 300, 400, 0, -20, 230, 260, 'container2'))
     app.field.addContainer(Container(app, 400, 500, 0, -20, 30, 60, 'container3'))
@@ -69,9 +73,9 @@ def onKeyPress(app, key):
 
 def onKeyHold(app, keys):
     #UNIVERSAL DESIGN: Can use controller and keys
-    if 'up' in keys:
+    if 'up' in keys and app.throttle<1.5:
         app.throttle += 0.1        # y is negative-up, why do you do this to me Claude
-    if 'down' in keys:
+    if 'down' in keys and app.throttle>-0.5:
         app.throttle -= 0.1
 
     #tilting forward and backward
@@ -91,13 +95,15 @@ def onKeyHold(app, keys):
             app.avr.roll -= 1.5
 
 def onStep(app):
-    if app.connectedController:
-        updateController(app, app.controller)
-    updateDronePosition(app)
-    updateContainers(app)
+    if not app.gameOver:
+        app.stepsTaken += 1
+        if app.connectedController:
+            updateController(app, app.controller)
+        updateDronePosition(app)
+        updateContainers(app)
 
 def updateDronePosition(app):
-    
+    #print(app.avr.droneZ)
     app.avr.projectedCubeCords = app.avr.makeCenterCube()
 
     if -45<=app.avr.roll<=45:
@@ -128,7 +134,7 @@ def updateDronePosition(app):
 
     #START EXEMPTED CODE (for camera updates in field code)
     app.avr.droneX, app.avr.droneY, app.avr.droneZ = app.field.clampToArena(
-        app.avr.droneX, app.avr.droneY, app.avr.droneZ, 0)
+        app.avr.droneX, app.avr.droneY, app.avr.droneZ)
     
     app.camera.follow(app.avr.droneX, app.avr.droneY, app.avr.droneZ)
 
@@ -158,6 +164,11 @@ def updateContainers(app):
         if container.isFalling:
             container.fallingContainer(app)
 
+        #LOGIC FOR CONNECTING TO DROP SPOTS!!!
+        #if container is touching a square -> app.stepPlacedOnSwuare = app.stepsTaken
+        #if app.stepsTaken - app.stepPlacedOnSquare > 
+        #   container.isFilled = True
+
     #MAKE THE FOLLOWING THEIR OWN FUNCTIONS B/C REPEATED
     app.stepsTaken += 1
     for propGuard in app.propGuards:
@@ -168,10 +179,11 @@ def updateContainers(app):
 
 def redrawAll(app):
     drawLabel('Use WASD for tilt if no controller connected', app.width/2, 50)
+    drawLabel(app.stepsPerSecond, app.width/2, 70)
 
     y = 5
     for line in app.messages.splitlines():
-        drawLabel(line, 10, y, align='left-top',font='orbitron',size=16, fill='fireBrick')
+        drawLabel(line, 10, y, align='left-top',size=16, fill='fireBrick')
         y+=16
     
     #EXEMPTED NEXT 3 LINES (Part of field):

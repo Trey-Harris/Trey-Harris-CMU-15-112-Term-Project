@@ -17,6 +17,8 @@ class Container:
 
         self.fallHeight = 0
         self.isBroken = False
+        self.isFilled = False
+        self.stepPlacedOnSquare = None
         self.name = name
 
         # self.connectedProjection = []
@@ -125,10 +127,11 @@ class Container:
             x2, y2 = camera.perspective(xs[b], ys[b], max(depthB, near), cx, cy)
             drawLine(x1, y1, x2, y2, fill=color, lineWidth=lineWidth)
 
-        for (indices, color) in self.faces:
-            screen = []
-            for i in indices:
-                sx, sy = camera.perspective(xs[i], ys[i], max(depths[i], near), cx, cy)
-                screen.append(sx)
-                screen.append(sy)
-            drawPolygon(*screen, fill=color, opacity=70)
+        if self.isFilled:
+            for (indices, color) in self.faces:
+                screen = []
+                for i in indices:
+                    sx, sy = camera.perspective(xs[i], ys[i], max(depths[i], near), cx, cy)
+                    screen.append(sx)
+                    screen.append(sy)
+                drawPolygon(*screen, fill=color, opacity=70)
