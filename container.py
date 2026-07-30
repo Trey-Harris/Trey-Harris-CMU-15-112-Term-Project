@@ -4,7 +4,7 @@ import numpy
 import copy
 
 class Container:
-    def __init__(self, app, leftX, rightX, bottomY, topY, closeZ, farZ):
+    def __init__(self, app, leftX, rightX, bottomY, topY, closeZ, farZ, name):
         self.containerLeftX = leftX
         self.containerRightX = rightX
         self.containerBottomY = bottomY
@@ -13,7 +13,11 @@ class Container:
         self.containerFarZ = farZ
         self.containerWidth = abs(self.containerLeftX - self.containerRightX)
         self.containerHeight = abs(self.containerBottomY - self.containerTopY)
-        self.color = 'red'
+        self.color = 'fireBrick'
+
+        self.fallHeight = 0
+        self.isBroken = False
+        self.name = name
 
         # self.connectedProjection = []
         # self.connectedProjection.extend(makeShape(self.containerWidth*(1/2**0.5), 4, 0, 0, 0))
@@ -28,14 +32,17 @@ class Container:
         self.isConnected = False
         self.isFalling   = False
 
+    def __repr__(self):
+        return self.name
+
     def connectContainer(self, app):
         self.isConnected = True
         self.containerLeftX = app.avr.droneX - self.containerWidth/2
         self.containerRightX = app.avr.droneX + self.containerWidth/2
         self.containerTopY = app.avr.droneY-self.containerHeight
         self.containerBottomY = self.containerTopY + self.containerHeight
-        self.containerCloseZ = app.avr.droneZ-100   #Arbitrary translation to help with depth perception when connected.
-        self.containerFarZ = app.avr.droneZ-125
+        self.containerCloseZ = app.avr.droneZ-125   #Arbitrary translation to help with depth perception when connected.
+        self.containerFarZ = app.avr.droneZ-100
 
         self.connectedProjection = []
         self.connectedProjection.extend(makeShape(self.containerWidth*(2**0.5), 4, 0, 0, 0))
@@ -45,20 +52,24 @@ class Container:
         #self.connectedBuildContainer()
         #self.buildContainer()
 
-    def fallingContainer(self):
-        containerHeight = self.containerTopY-self.containerBottomY
-
+    def fallingContainer(self, app):
         #The signs are backwards here b/c Claude wrote the field horribly. It has
         #a higher altitude being a more negative number :(
         if self.containerBottomY-5 <= 0:
             self.containerBottomY += 5
             self.containerTopY += 5
+            self.buildContainer()
         else:
-            self.containerBottomY = 0
-            self.containerTopY = -containerHeight
             self.isFalling = False
-        self.buildContainer() #Transfers back to Claude projection logic b/c
+            self.containerBottomY = 0
+            self.containerTopY = -self.containerHeight
+            if self.fallHeight <= -150:
+                self.isBroken = True
+                app.messages = app.messages +'\n' + f'{self.name} fell from a high place'
+            else:
+                self.buildContainer() #Transfers back to Claude projection logic b/c
         #container is now a part of the field
+                
 
 
 ###REST OF THIS FILE IS EXEMPTED: This is Claude implementing the same draw logic

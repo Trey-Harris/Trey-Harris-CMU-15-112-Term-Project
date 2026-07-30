@@ -480,7 +480,7 @@ class Field:
         # above -- each container sorts its own edges/faces internally, it
         # just doesn't interleave with the field's painter's-algorithm pass.
         for container in self.containers:
-            if not container.isConnected:
+            if not container.isConnected and not container.isBroken:
                 container.draw(app, camera, cx, cy)
 
     def depthOpacity(self, depth, camera, faintest=22):

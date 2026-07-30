@@ -10,6 +10,11 @@ def onAppStart(app):
     app.width = 1200
     app.height = 600
     app.stepsTaken = 0
+
+    #Game (not its own class b/c takes info from so many other classes, so 
+    #its cleaner if integrated in main)
+    app.points = 0
+    app.messages = ''
   
     #CLAUDE
     app.camera = ChaseCamera()
@@ -27,9 +32,9 @@ def onAppStart(app):
 
     #START CLAUDE (EXEMPT):
     app.field = Field()
-    app.field.addContainer(Container(app, 700, 800, 0, -20, 230, 260)) 
-    app.field.addContainer(Container(app, 300, 400, 0, -20, 230, 260))
-    app.field.addContainer(Container(app, 400, 500, 0, -20, 30, 60))
+    app.field.addContainer(Container(app, 700, 800, 0, -20, 230, 260, 'container1')) 
+    app.field.addContainer(Container(app, 300, 400, 0, -20, 230, 260, 'container2'))
+    app.field.addContainer(Container(app, 400, 500, 0, -20, 30, 60, 'container3'))
 
     app.avr.droneX, app.avr.droneY, app.avr.droneZ = app.field.startPosition()
 
@@ -56,9 +61,11 @@ def onAppStart(app):
 def onKeyPress(app, key):
     if key == 'space':
         for container in app.field.containers:
-            container.isConnected = False
-            container.isFalling = True
-            container.fallingContainer()
+            if container.isConnected:
+                container.fallHeight = app.avr.droneY
+                container.isConnected = False
+                container.isFalling = True
+                container.fallingContainer(app)
 
 def onKeyHold(app, keys):
     #UNIVERSAL DESIGN: Can use controller and keys
@@ -112,7 +119,7 @@ def updateDronePosition(app):
         app.avr.droneY -= 5*app.throttle
 
     if app.throttle<app.avr.throttleThreshold:
-        app.avr.droneY += 5*(app.avr.throttleThreshold-app.throttle)
+        app.avr.droneY += 7.5*(app.avr.throttleThreshold-app.throttle)
 
     #Update drone position (w/ scale factors for speed)
     app.avr.droneZ += (app.avr.pitch-60) * 0.5   # Arbitrary scale for better flight characteristics
@@ -149,7 +156,7 @@ def updateContainers(app):
             container.connectContainer(app)
 
         if container.isFalling:
-            container.fallingContainer()
+            container.fallingContainer(app)
 
     #MAKE THE FOLLOWING THEIR OWN FUNCTIONS B/C REPEATED
     app.stepsTaken += 1
@@ -162,6 +169,11 @@ def updateContainers(app):
 def redrawAll(app):
     drawLabel('Use WASD for tilt if no controller connected', app.width/2, 50)
 
+    y = 5
+    for line in app.messages.splitlines():
+        drawLabel(line, 10, y, align='left-top',font='orbitron',size=16, fill='fireBrick')
+        y+=16
+    
     #EXEMPTED NEXT 3 LINES (Part of field):
     app.field.draw(app, app.camera, app.width/2, app.height/2)
     app.ground.draw(app.camera, app.width/2, app.height/2)
@@ -170,7 +182,7 @@ def redrawAll(app):
     #Drawing Container
     for container in app.field.containers:
         if container.isConnected:
-            drawPrism(4, container.connectedProjection, app.avr.screenX, app.avr.screenY, 'red')
+            drawPrism(4, container.connectedProjection, app.avr.screenX, app.avr.screenY, 'fireBrick')
 
     #Drawing Prop Guards
     for propGuard in app.propGuards:    #gets each PropGuard instance from a list
