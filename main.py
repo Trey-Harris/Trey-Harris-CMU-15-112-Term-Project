@@ -27,7 +27,7 @@ def resetApp(app):
     app.activeSide = 'left'
     app.scores = [
         ['The 112 Dragon', 15112],
-        ['', 721],
+        ['Scotty', 721],
         ['The isPrime Guy', 700],
         ["Stever 5's Resident Cockraoches", 424],
         ['The 112 Axolotl', 112],
@@ -74,12 +74,13 @@ def onKeyPress(app, key):
                 container.isConnected = False
                 container.isFalling = True
                 container.fallingContainer(app)
-    if key == 'p':
-        app.gameOver = not app.gameOver
 
     if key == 'r':
         app.paused = False
         resetApp(app)
+
+    if key == 'm':
+        app.stepsTaken = 1799
 
     #Following key commands are for grading purposes if user cannot fly over wall well
     if key == 'h':
@@ -194,7 +195,7 @@ def updateContainers(app):
         if container.isFalling:
             container.fallingContainer(app)
 
-    #MAKE THE FOLLOWING THEIR OWN FUNCTIONS B/C REPEATED
+    #Reset prop guards
     for propGuard in app.propGuards:
         propGuard.propGuardCords = []
         propGuard.makePropGuard(propGuard.zDepth)
@@ -281,7 +282,7 @@ def drawStartScreen(app):
     into the net or wall will ruin the drone!
     '''
 
-    drawRect(350, 450, 500, 150, fill='navy', opacity=60, align='center')
+    drawRect(300, 450, 590, 150, fill='navy', opacity=60, align='center')
     joystickMessage = '''
     Drone Controller (recommended):
     - Tilt left joystick up and down to control altitude
@@ -289,7 +290,7 @@ def drawStartScreen(app):
     - USE SMALL INPUTS!!! It is easy to loose control of the drone at first.
     - Space to drop a container (don't drop from too high or it will break!)
     '''
-    drawRect(850, 450, 500, 150, fill='navy', opacity=60, align='center')
+    drawRect(900, 450, 590, 150, fill='navy', opacity=60, align='center')
     keyboardMessage = '''
     Keyboard (not ideal):
     - Up and down arrow keys for altitude
@@ -304,12 +305,12 @@ def drawStartScreen(app):
 
     joystickScreenY = 375
     for line in joystickMessage.splitlines():
-        drawLabel(line, 350, joystickScreenY, font='orbitron', size=12, fill='white')
+        drawLabel(line, 300, joystickScreenY, font='orbitron', size=15, fill='white')
         joystickScreenY += 25
 
     keyboardScreenY = 375
     for line in keyboardMessage.splitlines():
-        drawLabel(line, 850, keyboardScreenY, font='orbitron', size=12, fill='white')
+        drawLabel(line, 900, keyboardScreenY, font='orbitron', size=15, fill='white')
         keyboardScreenY += 25
 
     drawLabel('Press r to begin!', app.width/2, app.height/2+20, font='orbitron', size = 20, fill='red')
@@ -330,7 +331,7 @@ def displayLeaderboard(app):
 
     drawRect(app.width/2, 250, 750, 35, fill='navy', opacity=60, align='center')
    
-    playerIndex = None
+    playerIndex = len(leaderboard)-2
     for i in range(len(leaderboard)):
         if leaderboard[i][0] == 'You':
             playerIndex = i

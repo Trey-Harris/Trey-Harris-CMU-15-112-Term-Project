@@ -71,17 +71,18 @@ class Container:
                 #haven't been droped in this phase
                 if (app.activeSide == 'left' and self not in app.containersWithPoints
                     and self.containerRightX < 0):
-                    if self.scoreDropoff(-700, -800, 230, 260) != None:
+                    if self.scoreDropoff(-800, -700, 230, 260) != None:
                         app.points += 3*app.timer
                         app.successfulDrops += 1
                         app.containersWithPoints.append(self)
                         return None
-                    if self.scoreDropoff(-300, -400, 230, 260) != None:
+                    elif self.scoreDropoff(-400, -300, 230, 260) != None:
                         app.points += 3*app.timer
                         app.successfulDrops += 1
                         app.containersWithPoints.append(self)
                         return None
-                    if self.scoreDropoff(-400, -50, 30, 60) != None:
+                    elif self.scoreDropoff(-500, -400, 10, 80) != None:
+                        print('hi')
                         app.points += 3*app.timer
                         app.successfulDrops += 1
                         app.containersWithPoints.append(self)
@@ -94,12 +95,12 @@ class Container:
                         app.successfulDrops += 1
                         app.containersWithPoints.append(self)
                         return None
-                    if self.scoreDropoff(300, 400, 230, 260) != None:
+                    elif self.scoreDropoff(300, 400, 230, 260) != None:
                         app.points += 3*app.timer
                         app.successfulDrops += 1
                         app.containersWithPoints.append(self)
                         return None
-                    if self.scoreDropoff(400, 50, 30, 60) != None:
+                    elif self.scoreDropoff(400, 500, 10, 80) != None:
                         app.points += 3*app.timer
                         app.successfulDrops += 1
                         app.containersWithPoints.append(self)
@@ -107,12 +108,15 @@ class Container:
 
 
     def scoreDropoff(self, zoneLeft, zoneRight, zoneFar, zoneClose):
+        print(self.containerRightX, self.containerFarZ, zoneLeft, zoneRight, zoneFar, zoneClose)
         if (((self.containerRightX>=zoneLeft) and (self.containerFarZ>=zoneClose)) or
             ((self.containerRightX>=zoneLeft) and (self.containerCloseZ>=zoneFar))):
+            print('hi')
             return 3
 
         if (((self.containerLeftX<=zoneRight) and (self.containerFarZ>=zoneClose)) or
                 ((self.containerLeftX<=zoneRight) and (self.containerCloseZ>=zoneFar))):
+            print('hi')
             return 3
 
 ###REST OF THIS FILE IS EXEMPTED: This is Claude implementing the same draw logic
