@@ -645,7 +645,7 @@ class Field:
             print('right wall')
         x = min(limitX, max(-limitX, x))
 
-        if z < -limitZ:
+        if z < -150:
             app.gameOver = True
             app.scores.append(['You', app.points])
             print('near wall')

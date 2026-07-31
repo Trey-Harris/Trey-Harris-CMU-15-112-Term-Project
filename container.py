@@ -21,11 +21,6 @@ class Container:
         self.stepPlacedOnSquare = None
         self.name = name
 
-        # self.connectedProjection = []
-        # self.connectedProjection.extend(makeShape(self.containerWidth*(1/2**0.5), 4, 0, 0, 0))
-        # self.connectedProjection.extend(makeShape(self.containerWidth*(1/2**0.5), 4, 0, 0, 10))
-        # self.connectedProjection = project(copy.deepcopy(self.connectedProjection), app.avr.pitch, app.avr.roll)
-
         self.points = []
         self.edges  = []
         self.faces  = []
@@ -71,6 +66,20 @@ class Container:
             else:
                 self.buildContainer() #Transfers back to Claude projection logic b/c
         #container is now a part of the field
+            self.scoreDropoff(app, 700, 800, 230, 260)
+            self.scoreDropoff(app, 300, 400, 230, 260)
+            self.scoreDropoff(app, 400, 500, 30, 60)
+
+
+    def scoreDropoff(self, app, zoneLeft, zoneRight, zoneFar, zoneClose):
+        if self.containerRightX < 0:
+            if ((self.containerRightX>=zoneLeft) and ((self.containerFarZ>=zoneClose)
+                or (self.containerCloseZ<=zoneFar))):
+                app.points += 3
+
+            if ((self.containerLeftX<=zoneRight) and ((self.containerFarZ>=zoneClose)
+                        or (self.containerCloseZ<=zoneFar))):
+                app.points += 3
                 
 
 

@@ -5,18 +5,23 @@ from container import *
 from drawingAndProjectionin3D import *
 import copy
 from cmu_graphics import *
+from PIL import Image
 
 def onAppStart(app):
     app.width = 1200
     app.height = 600
     app.stepsTaken = 0
+    app.timer = 60
     app.gameOver = False
     resetApp(app)
+    sadBg = Image.open("112 Leaderboard Background.avif")
+    app.Bg = CMUImage(sadBg.resize((1200,600)))
+
 
 def resetApp(app):
     #Game (not its own class b/c takes info from so many other classes, so 
     #its cleaner if integrated in main)
-    app.points = 80
+    app.points = 0
     app.messages = ''
     app.gameOver = False
     app.scores = [
@@ -112,13 +117,18 @@ def onKeyHold(app, keys):
 def onStep(app):
     if not app.gameOver:
         app.stepsTaken += 1
+        if app.stepsTaken%15==0:
+            print('hi')
+            app.timer-=1
+        if app.stepsTaken == 1800:
+            app.timer = 60
         if app.connectedController:
             updateController(app, app.controller)
         updateDronePosition(app)
         updateContainers(app)
 
 def updateDronePosition(app):
-    #print(app.avr.droneZ)
+    # print(app.avr.droneX)
     app.avr.projectedCubeCords = app.avr.makeCenterCube()
 
     if -45<=app.avr.roll<=45:
@@ -158,6 +168,7 @@ def updateDronePosition(app):
     #END CLAUDE (ALL CODE BELOW IS MY OWN)
 
 def updateContainers(app):
+    print(app.points)
     for container in app.field.containers:
         containerWidth = container.containerRightX-container.containerLeftX
         containerDepth = container.containerFarZ-container.containerCloseZ
@@ -179,13 +190,7 @@ def updateContainers(app):
         if container.isFalling:
             container.fallingContainer(app)
 
-        #LOGIC FOR CONNECTING TO DROP SPOTS!!!
-        #if container is touching a square -> app.stepPlacedOnSwuare = app.stepsTaken
-        #if app.stepsTaken - app.stepPlacedOnSquare > 
-        #   container.isFilled = True
-
     #MAKE THE FOLLOWING THEIR OWN FUNCTIONS B/C REPEATED
-    app.stepsTaken += 1
     for propGuard in app.propGuards:
         propGuard.propGuardCords = []
         propGuard.makePropGuard(propGuard.zDepth)
@@ -203,7 +208,7 @@ def redrawAll(app):
 
     else:
         drawLabel('Use WASD for tilt if no controller connected', app.width/2, 50)
-        drawLabel(app.stepsPerSecond, app.width/2, 70)
+        drawLabel(app.timer, app.width/2, 70)
 
         y = 5
         for line in app.messages.splitlines():
@@ -249,11 +254,12 @@ def drawPrism(numSides, cords, cx, cy, color):
         # Connects the two faces together
         drawLine(x1, y1, x3, y3, fill=color)
 
-def displayLeaderboard(app):   
+def displayLeaderboard(app): 
+    drawImage(app.Bg, 0, 0)  
     leaderboard = sorted(copy.deepcopy(app.scores), key = lambda x: x[1], reverse=True)
     screenPosY = 50
     for team in leaderboard:
-        drawLabel(f'{team[0]} ----- {team[1]}', app.width/2, screenPosY)
+        drawLabel(f'{team[0]} ----- {team[1]}', app.width/2, screenPosY, font='orbitron', bold=True)
         screenPosY += 25
 
 runApp()
