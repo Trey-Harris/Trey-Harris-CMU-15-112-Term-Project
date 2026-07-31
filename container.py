@@ -42,8 +42,8 @@ class Container:
         self.containerFarZ = app.avr.droneZ-100
 
         self.connectedProjection = []
-        self.connectedProjection.extend(makeShape(self.containerWidth*(2**0.5), 4, 0, 0, 0))
-        self.connectedProjection.extend(makeShape(self.containerWidth*(2**0.5), 4, 0, 0, -25))
+        self.connectedProjection.extend(makeConnectedContainer(self.containerWidth, self.containerHeight, 0))
+        self.connectedProjection.extend(makeConnectedContainer(self.containerWidth, self.containerHeight, -25))
         self.connectedProjection = project(copy.deepcopy(self.connectedProjection), app.avr.pitch, app.avr.roll)
         #Call different method here
         #self.connectedBuildContainer()

@@ -27,8 +27,8 @@ def resetApp(app):
     app.activeSide = 'left'
     app.scores = [
         ['The 112 Dragon', 15112],
-        ["Lauren's Candy Jar", 953],
-        ['The isPrime Guy', 756],
+        ['', 721],
+        ['The isPrime Guy', 700],
         ["Stever 5's Resident Cockraoches", 424],
         ['The 112 Axolotl', 112],
         ['Trey debugging this at 2am', -1]
@@ -38,10 +38,8 @@ def resetApp(app):
     leaderboardBackground = Image.open("IMG_5796.JPG")
     app.endBg = CMUImage(leaderboardBackground.resize((1200,600)))
   
-    #CLAUDE
     app.camera = ChaseCamera()
 
-    #Drone vars
     app.avr = Drone(app, 5)
 
     #Controller vars
@@ -50,21 +48,18 @@ def resetApp(app):
     app.leftRightAxis = 0
     app.forwardBackwardAxis = 0
     app.throttle = 0
-    
 
-    #START CLAUDE (EXEMPT):
+    #(Start exempted code) This code initializes exempted code in field
     app.field = Field()
     app.camera.setBounds(app.field)
     app.field.addContainer(Container(app, 700, 800, 0, -20, 230, 260, 'container1')) 
     app.field.addContainer(Container(app, 300, 400, 0, -20, 230, 260, 'container2'))
     app.field.addContainer(Container(app, 400, 500, 0, -20, 30, 60, 'container3'))
-
     app.avr.droneX, app.avr.droneY, app.avr.droneZ = app.field.startPosition()
-
     app.ground = Ground()
-    #END CLAUDE
+    #(End exempted code)
 
- #Prop guard vars
+    #Prop guard vars
     propGuard1 = PropGuard(app, 45, 20) #make these be relative toF the drone
     propGuard2 = PropGuard(app, 135, 20)
     propGuard3 = PropGuard(app, 225, 4)
@@ -211,8 +206,15 @@ def redrawAll(app):
             displayLeaderboard(app)
 
         else:
-            drawLabel('Use WASD for tilt if no controller connected', app.width/2, 50)
-            drawLabel(app.timer, app.width/2, 70)
+            timeMessage = f'Time Remaining in Phase: {app.timer}'
+            drawRect(app.width/2,60,250,70, fill='navy', opacity=60, align='center')
+            drawLabel(timeMessage,app.width/2,50,fill='white',font='orbitron')
+            if app.activeSide == 'left':
+                drawLabel('Move dumpsters to the left side!',app.width/2,70,
+                          fill='white',font='orbitron')
+            else:
+                drawLabel('Move containers to the right side',app.width/2,70,
+                          fill='white',font='orbitron')
 
             y = 5
             for line in app.message.splitlines():
@@ -306,12 +308,10 @@ def drawStartScreen(app):
     drawLabel('Press r to begin!', app.width/2, app.height/2+20, font='orbitron', size = 20, fill='red')
 
 
-
-
 def displayLeaderboard(app): 
     drawImage(app.endBg, 0, 0)  
     drawRect(app.width/2, 75, 700, 100, fill='navy', opacity=60, align='center')
-    drawLabel('Leaderboard', app.width/2, 75, font='orbitron', size=80, fill='white')
+    drawLabel('GAME OVER', app.width/2, 75, font='orbitron', size=80, fill='white')
     drawRect(app.width/2, 450, 500, 300, fill='navy', opacity=60, align='center')
     leaderboard = sorted(copy.deepcopy(app.scores), key = lambda x: x[1], reverse=True)
 

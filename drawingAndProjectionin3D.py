@@ -12,6 +12,14 @@ def makeShape(radius, numEdges, dispX, dispY, zDepth):
         angle += 360/numEdges
     return shapeCords
 
+def makeConnectedContainer(x, y, z):
+    return [
+        [-x, y, z, 1],
+        [x, y, z, 1],
+        [x, -y, z, 1],
+        [-x, -y, z, 1]
+    ]
+
 def makeTranslation(cords, dx, dy, dz):
     res = []
     for i in range(len(cords)):
