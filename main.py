@@ -247,7 +247,7 @@ def redrawAll(app):
             drawPrism(4, app.avr.projectedCubeCords, app.avr.screenX, app.avr.screenY, 'black')
 
 
-#Citation: Gemini suggested to use % to connect index 7 with index 0, but the 
+#Citation: Gemini suggested to use % to connect the final edge but the 
 #rest of the code is my own
 def drawPrism(numSides, cords, cx, cy, color):
     for i in range(numSides):

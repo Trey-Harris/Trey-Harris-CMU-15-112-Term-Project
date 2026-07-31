@@ -1,5 +1,6 @@
 from drawingAndProjectionin3D import *
-from cmu_graphics import *
+from cmu_graphics import * #Not needed anymore I think, but I'm not deleting
+#it because I don't have time to test that fully.
 import numpy
 import copy
 
@@ -45,9 +46,7 @@ class Container:
         self.connectedProjection.extend(makeConnectedContainer(self.containerWidth, self.containerHeight, 0))
         self.connectedProjection.extend(makeConnectedContainer(self.containerWidth, self.containerHeight, -25))
         self.connectedProjection = project(copy.deepcopy(self.connectedProjection), app.avr.pitch, app.avr.roll)
-        #Call different method here
-        #self.connectedBuildContainer()
-        #self.buildContainer()
+  
 
     def fallingContainer(self, app):
         #The signs are backwards here b/c Claude wrote the field horribly. It has
@@ -68,7 +67,7 @@ class Container:
         #container is now a part of the field
 
                 #These ifs only adds score for containers on the correct side, and 
-                #haven't been droped in this phase
+                #if haven't been droped in this phase
                 if (app.activeSide == 'left' and self not in app.containersWithPoints
                     and self.containerRightX < 0):
                     if self.scoreDropoff(-800, -700, 230, 260) != None:
@@ -82,7 +81,6 @@ class Container:
                         app.containersWithPoints.append(self)
                         return None
                     elif self.scoreDropoff(-500, -400, 10, 80) != None:
-                        print('hi')
                         app.points += 3*app.timer
                         app.successfulDrops += 1
                         app.containersWithPoints.append(self)
@@ -108,15 +106,12 @@ class Container:
 
 
     def scoreDropoff(self, zoneLeft, zoneRight, zoneFar, zoneClose):
-        print(self.containerRightX, self.containerFarZ, zoneLeft, zoneRight, zoneFar, zoneClose)
         if (((self.containerRightX>=zoneLeft) and (self.containerFarZ>=zoneClose)) or
             ((self.containerRightX>=zoneLeft) and (self.containerCloseZ>=zoneFar))):
-            print('hi')
             return 3
 
         if (((self.containerLeftX<=zoneRight) and (self.containerFarZ>=zoneClose)) or
                 ((self.containerLeftX<=zoneRight) and (self.containerCloseZ>=zoneFar))):
-            print('hi')
             return 3
 
 ###REST OF THIS FILE IS EXEMPTED: This is Claude implementing the same draw logic

@@ -7,9 +7,20 @@ over to the open dropoff spots. The faster you do this, the more points you get.
 
 Video Link: https://drive.google.com/file/d/1VMtZG0uuREL_CWmZ8ZTE4a0Og7JwS54f/view?usp=sharing
 
+Files:
 The only file needed to be run is the main file, the rest of the files in GitHub
 just store functions for the game. Download pygame and numpy for the drone controller
-and 3D projections to work (also PIL for the images to load).
+and 3D projections to work (also PIL for the images to load). Below is a list of
+all files that are run by main (there are several files that I used for testing
+that are leftover in the GitHub):
+- controller.py
+- drone.py
+- main.py
+- drawingAndProjectionin3D.py
+- field.py
+- container.py
+- IMG_5796.JPG
+- IMG_5797.JPG
 
 Shortcuts:
 - r resets the game
