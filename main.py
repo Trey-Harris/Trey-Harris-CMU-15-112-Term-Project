@@ -81,6 +81,12 @@ def onKeyPress(app, key):
         app.paused = False
         resetApp(app)
 
+    #Following key commands are for grading purposes if user cannot fly over wall well
+    if key == 'h':
+        app.avr.droneX = 300
+
+    if key == 'g':
+        app.avr.droneX = -300
 
 def onKeyHold(app, keys):
     if 'up' in keys and app.throttle<1.5:
@@ -167,7 +173,6 @@ def updateDronePosition(app):
     #END CLAUDE (ALL CODE BELOW IS MY OWN)
 
 def updateContainers(app):
-    print(app.points, app.successfulDrops)
     for container in app.field.containers:
         containerWidth = container.containerRightX-container.containerLeftX
         containerDepth = container.containerFarZ-container.containerCloseZ
@@ -200,22 +205,24 @@ def updateContainers(app):
 def redrawAll(app):
     if app.paused:
         drawStartScreen(app)
-    #To make sure it doesn't continue onward and draw over start screen
     else:
         if app.gameOver:
             displayLeaderboard(app)
 
         else:
             timeMessage = f'Time Remaining in Phase: {app.timer}'
-            drawRect(app.width/2,60,250,70, fill='navy', opacity=60, align='center')
+            drawRect(app.width/2,70,275,70, fill='navy', opacity=60, align='center')
             drawLabel(timeMessage,app.width/2,50,fill='white',font='orbitron')
             if app.activeSide == 'left':
-                drawLabel('Move dumpsters to the left side!',app.width/2,70,
+                drawLabel('Move dumpsters to the LEFT side!',app.width/2,70,
                           fill='white',font='orbitron')
             else:
-                drawLabel('Move containers to the right side',app.width/2,70,
+                drawLabel('Move containers to the RIGHT side',app.width/2,70,
                           fill='white',font='orbitron')
+            pointsMessage = f'Points: {app.points}'
+            drawLabel(pointsMessage,app.width/2,90,fill='white',font='orbitron')
 
+            #Minecraft Easter Egg for when a container is destoryed
             y = 5
             for line in app.message.splitlines():
                 drawLabel(line, 10, y, align='left-top',size=16, fill='fireBrick')
