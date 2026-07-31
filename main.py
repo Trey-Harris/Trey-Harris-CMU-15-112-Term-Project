@@ -10,27 +10,30 @@ from PIL import Image
 def onAppStart(app):
     app.width = 1200
     app.height = 600
-    app.stepsTaken = 0
-    app.timer = 60
-    app.gameOver = False
+    app.stepsPerSecond = 30
     resetApp(app)
-    sadBg = Image.open("112 Leaderboard Background.avif")
-    app.Bg = CMUImage(sadBg.resize((1200,600)))
-
 
 def resetApp(app):
     #Game (not its own class b/c takes info from so many other classes, so 
     #its cleaner if integrated in main)
+    app.stepsTaken = 0
+    app.timer = 60
+    app.gameOver = False
     app.points = 0
+    app.successfulDrops = 0
+    app.containersWithPoints = []
     app.messages = ''
     app.gameOver = False
+    app.activeSide = 'left'
     app.scores = [
-        ['Team Appreciate', 60],
-        ['Skywalkers Academy', 58],
-        ['Daedalus', 55],
-        ['Team Rush', 47],
-        ['Horsepower', 28]
+        ['112 Dragon', 15112],
+        ["Lauren's Rubber Ducks", 700],
+        ['Stever 5 Cockroach', 522],
+        ['The isPrime Guy', 322],
+        ['112 Axolotl', 112],
     ]
+    leaderboardBackground = Image.open("112 Leaderboard Background.avif")
+    app.Bg = CMUImage(leaderboardBackground.resize((1200,600)))
   
     #CLAUDE
     app.camera = ChaseCamera()
@@ -65,18 +68,6 @@ def resetApp(app):
     propGuard4 = PropGuard(app, 315, 4)
     app.propGuards = [propGuard1, propGuard2, propGuard3, propGuard4]
 
-    #Container Vars
-    # app.container1 = Container(app, app.field.fieldLength-300, 
-    #                     app.field.fieldLength-200, app.field.fieldDepth+50, app.field.fieldDepth+100, 10, 40)
-    # app.containers = [app.container1]
-
-
-# def start_redrawAll(app):
-#     drawLabel('hi', app.width/2, app.height/2)
-
-def gameOver(app, message):
-    app.gameOver = True 
-
 def onKeyPress(app, key):
     if key == 'space':
         for container in app.field.containers:
@@ -92,9 +83,8 @@ def onKeyPress(app, key):
         resetApp(app)
 
 def onKeyHold(app, keys):
-    #UNIVERSAL DESIGN: Can use controller and keys
     if 'up' in keys and app.throttle<1.5:
-        app.throttle += 0.1        # y is negative-up, why do you do this to me Claude
+        app.throttle += 0.1        
     if 'down' in keys and app.throttle>-0.5:
         app.throttle -= 0.1
 
@@ -117,18 +107,22 @@ def onKeyHold(app, keys):
 def onStep(app):
     if not app.gameOver:
         app.stepsTaken += 1
-        if app.stepsTaken%15==0:
-            print('hi')
+        if app.stepsTaken%30==0:
             app.timer-=1
-        if app.stepsTaken == 1800:
+        if app.stepsTaken == 1800 or (app.successfulDrops==3 and app.activeSide=='left'):
             app.timer = 60
+            app.stepsTaken = 1800 #to account for the fact that could finish before step limit
+            app.containersWithPoints = [] #containers can now score points on the other end
+            app.activeSide = 'right'
+        if app.stepsTaken == 3600 or app.successfulDrops==6:
+            app.gameOver = True
+
         if app.connectedController:
             updateController(app, app.controller)
         updateDronePosition(app)
         updateContainers(app)
 
 def updateDronePosition(app):
-    # print(app.avr.droneX)
     app.avr.projectedCubeCords = app.avr.makeCenterCube()
 
     if -45<=app.avr.roll<=45:
@@ -168,7 +162,7 @@ def updateDronePosition(app):
     #END CLAUDE (ALL CODE BELOW IS MY OWN)
 
 def updateContainers(app):
-    print(app.points)
+    print(app.points, app.successfulDrops)
     for container in app.field.containers:
         containerWidth = container.containerRightX-container.containerLeftX
         containerDepth = container.containerFarZ-container.containerCloseZ
