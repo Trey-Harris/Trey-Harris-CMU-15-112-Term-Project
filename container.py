@@ -62,7 +62,7 @@ class Container:
             self.containerTopY = -self.containerHeight
             if self.fallHeight <= -150:
                 self.isBroken = True
-                app.messages = app.messages +'\n' + f'{self.name} fell from a high place'
+                app.message = app.message +'\n' + f'{self.name} fell from a high place'
             else:
                 self.buildContainer() #Transfers back to Claude projection logic b/c
         #container is now a part of the field

@@ -11,6 +11,7 @@ def onAppStart(app):
     app.width = 1200
     app.height = 600
     app.stepsPerSecond = 30
+    app.paused = True
     resetApp(app)
 
 def resetApp(app):
@@ -32,8 +33,10 @@ def resetApp(app):
         ['The 112 Axolotl', 112],
         ['Trey debugging this at 2am', -1]
     ]
-    leaderboardBackground = Image.open("112 Leaderboard Background.avif")
-    app.Bg = CMUImage(leaderboardBackground.resize((1200,600)))
+    startBackground = Image.open("IMG_5797.JPG")
+    app.startBg = CMUImage(startBackground.resize((1200,600)))
+    leaderboardBackground = Image.open("IMG_5796.JPG")
+    app.endBg = CMUImage(leaderboardBackground.resize((1200,600)))
   
     #CLAUDE
     app.camera = ChaseCamera()
@@ -80,7 +83,9 @@ def onKeyPress(app, key):
         app.gameOver = not app.gameOver
 
     if key == 'r':
+        app.paused = False
         resetApp(app)
+
 
 def onKeyHold(app, keys):
     if 'up' in keys and app.throttle<1.5:
@@ -105,7 +110,11 @@ def onKeyHold(app, keys):
             app.avr.roll -= 1.5
 
 def onStep(app):
-    if not app.gameOver:
+    if not app.paused:
+        takeStep(app)
+
+def takeStep(app):
+    if not app.gameOver and not app.paused:
         app.stepsTaken += 1
         if app.stepsTaken%30==0:
             app.timer-=1
@@ -194,34 +203,38 @@ def updateContainers(app):
 
 
 def redrawAll(app):
-    if app.gameOver:
-        displayLeaderboard(app)
-
+    if app.paused:
+        drawStartScreen(app)
+    #To make sure it doesn't continue onward and draw over start screen
     else:
-        drawLabel('Use WASD for tilt if no controller connected', app.width/2, 50)
-        drawLabel(app.timer, app.width/2, 70)
+        if app.gameOver:
+            displayLeaderboard(app)
 
-        y = 5
-        for line in app.message.splitlines():
-            drawLabel(line, 10, y, align='left-top',size=16, fill='fireBrick')
-            y+=16
-        
-        #EXEMPTED NEXT 3 LINES (Part of field):
-        app.field.draw(app, app.camera, app.width/2, app.height/2)
-        app.ground.draw(app.camera, app.width/2, app.height/2)
-        app.ground.drawShadow(app.camera, app.avr, app.width/2, app.height/2)
+        else:
+            drawLabel('Use WASD for tilt if no controller connected', app.width/2, 50)
+            drawLabel(app.timer, app.width/2, 70)
 
-        #Drawing Container
-        for container in app.field.containers:
-            if container.isConnected:
-                drawPrism(4, container.connectedProjection, app.avr.screenX, app.avr.screenY, 'fireBrick')
+            y = 5
+            for line in app.message.splitlines():
+                drawLabel(line, 10, y, align='left-top',size=16, fill='fireBrick')
+                y+=16
+            
+            #EXEMPTED NEXT 3 LINES (Part of field):
+            app.field.draw(app, app.camera, app.width/2, app.height/2)
+            app.ground.draw(app.camera, app.width/2, app.height/2)
+            app.ground.drawShadow(app.camera, app.avr, app.width/2, app.height/2)
 
-        #Drawing Prop Guards
-        for propGuard in app.propGuards:    #gets each PropGuard instance from a list
-            drawPrism(propGuard.propGuardEdges, propGuard.projectedCords, app.avr.screenX, app.avr.screenY, 'black')
+            #Drawing Container
+            for container in app.field.containers:
+                if container.isConnected:
+                    drawPrism(4, container.connectedProjection, app.avr.screenX, app.avr.screenY, 'fireBrick')
 
-        #Drawing Drone Center
-        drawPrism(4, app.avr.projectedCubeCords, app.avr.screenX, app.avr.screenY, 'black')
+            #Drawing Prop Guards
+            for propGuard in app.propGuards:    #gets each PropGuard instance from a list
+                drawPrism(propGuard.propGuardEdges, propGuard.projectedCords, app.avr.screenX, app.avr.screenY, 'black')
+
+            #Drawing Drone Center
+            drawPrism(4, app.avr.projectedCubeCords, app.avr.screenX, app.avr.screenY, 'black')
 
 
 #Citation: Gemini suggested to use % to connect index 7 with index 0, but the 
@@ -245,30 +258,79 @@ def drawPrism(numSides, cords, cx, cy, color):
         # Connects the two faces together
         drawLine(x1, y1, x3, y3, fill=color)
 
+
+def drawStartScreen(app):
+    drawImage(app.startBg, 0, 0)
+    drawRect(app.width/2, app.height/2-100, 900, 300, fill='navy', opacity=60, align='center')
+    introMessage = '''
+    Welcome pilot-in-training! This is Sky Scavenger - AVR Flight Similator
+
+    Your goal: Connect to containers and bring them accross the
+    wall in the center of the field. There are two phases, one transporting containers
+    from right to left, and the other from left to right. You get more points for
+    dropping containers in zones faster, but play it safe at first because crashing
+    into the net or wall will ruin the drone!
+    '''
+
+    drawRect(350, 450, 500, 150, fill='navy', opacity=60, align='center')
+    joystickMessage = '''
+    Drone Controller (recommended):
+    - Tilt left joystick up and down to control altitude
+    - Tilt right joystick in direction you want the drone to move
+    - USE SMALL INPUTS!!! It is easy to loose control of the drone at first.
+    - Space to drop a container (don't drop from too high or it will break!)
+    '''
+    drawRect(850, 450, 500, 150, fill='navy', opacity=60, align='center')
+    keyboardMessage = '''
+    Keyboard (not ideal):
+    - Up and down arrow keys for altitude
+    - WASD to move the drone forward/backward/left/right
+    - Space to drop a container (don't drop from too high or it will break!)
+    - WARNING: Keyboard mode is more difficult than with a controller
+'''
+    messageScreenY = 100
+    for line in introMessage.splitlines():
+        drawLabel(line, app.width/2, messageScreenY, font='orbitron', size=18, fill='white')
+        messageScreenY += 25
+
+    joystickScreenY = 375
+    for line in joystickMessage.splitlines():
+        drawLabel(line, 350, joystickScreenY, font='orbitron', size=12, fill='white')
+        joystickScreenY += 25
+
+    keyboardScreenY = 375
+    for line in keyboardMessage.splitlines():
+        drawLabel(line, 850, keyboardScreenY, font='orbitron', size=12, fill='white')
+        keyboardScreenY += 25
+
+    drawLabel('Press r to begin!', app.width/2, app.height/2+20, font='orbitron', size = 20, fill='red')
+
+
+
+
 def displayLeaderboard(app): 
-    drawImage(app.Bg, 0, 0)  
-    drawRect(app.width/2, 75, 700, 100, fill='white', opacity=75, align='center')
-    drawLabel('Leaderboard', app.width/2, 75, font='orbitron', size=80)
-    drawRect(app.width/2, 450, 500, 300, fill='white', opacity=75, align='center')
+    drawImage(app.endBg, 0, 0)  
+    drawRect(app.width/2, 75, 700, 100, fill='navy', opacity=60, align='center')
+    drawLabel('Leaderboard', app.width/2, 75, font='orbitron', size=80, fill='white')
+    drawRect(app.width/2, 450, 500, 300, fill='navy', opacity=60, align='center')
     leaderboard = sorted(copy.deepcopy(app.scores), key = lambda x: x[1], reverse=True)
 
     screenPosY = 325
     for team in leaderboard:
-        drawLabel(f'{team[0]} ----- {team[1]}', app.width/2, screenPosY, font='orbitron', bold=True, size=20)
+        drawLabel(f'{team[0]} ----- {team[1]}', app.width/2, screenPosY, 
+                  font='orbitron', bold=True, size=20, fill='white')
         screenPosY += 35
 
-    drawRect(app.width/2, 250, 750, 35, fill='white', opacity=75, align='center')
-    if len(app.message)>0:
-            drawLabel(app.message)
-    else:
-        playerIndex = None
-        for i in range(len(leaderboard)):
-            if leaderboard[i][0] == 'You':
-                playerIndex = i
-        message = f'You finished ahead of {leaderboard[playerIndex+1][0]}. Good job!'
-        drawLabel(message, app.width/2, 250, font='orbitron', size=20)
+    drawRect(app.width/2, 250, 750, 35, fill='navy', opacity=60, align='center')
+   
+    playerIndex = None
+    for i in range(len(leaderboard)):
+        if leaderboard[i][0] == 'You':
+            playerIndex = i
+    message = f'You finished ahead of {leaderboard[playerIndex+1][0]}. Good job!'
+    drawLabel(message, app.width/2, 250, font='orbitron', size=20,fill='white')
 
-    drawRect(app.width/2, 150, 300, 30, fill='white', opacity=75, align='center')
-    drawLabel('Press r to restart', app.width/2, 150, font='orbitron',size=16)
+    drawRect(app.width/2, 150, 300, 30, fill='navy', opacity=60, align='center')
+    drawLabel('Press r to restart', app.width/2, 150, font='orbitron',size=16,fill='white')
 
 runApp()
