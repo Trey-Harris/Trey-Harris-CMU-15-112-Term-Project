@@ -637,36 +637,34 @@ class Field:
 
         if x < -limitX:
             app.gameOver = True
-            app.scores.append(['You', app.points])
             print('left wall')
         elif x > limitX:
             app.gameOver = True
-            app.scores.append(['You', app.points])
             print('right wall')
         x = min(limitX, max(-limitX, x))
 
         if z < -150:
-            app.gameOver = True
             app.scores.append(['You', app.points])
+            app.gameOver = True
             print('near wall')
         elif z > limitZ:
+            app.scores.append(['You', app.points])
             app.gameOver = True
-            app.scores.append(['You', app.points]) 
             print('far wall')
         z = min(limitZ, max(-limitZ, z))
 
         ceiling = self.ceilingAt(z) + margin
         if y < ceiling:
+            app.scores.append(['You', app.points])
             app.gameOver = True
-            app.scores.append(['You', app.points]) 
             print('ceiling')
         # elif y > -margin:
         #     print('floor')
         y = min(-margin, max(ceiling, y))
 
         if self.hitsBarrier(x, y, z, margin):
+            app.scores.append(['You', app.points])
             app.gameOver = True
-            app.scores.append(['You', app.points]) 
             print('center wall')
             halfThickness = self.barrierThickness/2 + margin
             x = halfThickness if x >= 0 else -halfThickness

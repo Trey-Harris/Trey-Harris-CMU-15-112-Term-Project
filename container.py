@@ -67,7 +67,8 @@ class Container:
                 self.buildContainer() #Transfers back to Claude projection logic b/c
         #container is now a part of the field
 
-                #These ifs only adds score for containers on the correct side
+                #These ifs only adds score for containers on the correct side, and 
+                #haven't been droped in this phase
                 if app.activeSide == 'left' and self not in app.containersWithPoints:
                     print('hi')
                     if self.leftScoreDropoff(app, -700, -800, 230, 260) != 0:

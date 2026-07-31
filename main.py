@@ -18,19 +18,19 @@ def resetApp(app):
     #its cleaner if integrated in main)
     app.stepsTaken = 0
     app.timer = 60
-    app.gameOver = True
     app.points = 0
     app.successfulDrops = 0
     app.containersWithPoints = []
-    app.messages = ''
+    app.message = ''
     app.gameOver = False
     app.activeSide = 'left'
     app.scores = [
-        ['112 Dragon', 15112],
-        ["Lauren's Rubber Ducks", 700],
-        ['Stever 5 Cockroach', 522],
-        ['The isPrime Guy', 322],
-        ['112 Axolotl', 112],
+        ['The 112 Dragon', 15112],
+        ["Lauren's Candy Jar", 953],
+        ['The isPrime Guy', 756],
+        ["Stever 5's Resident Cockraoches", 424],
+        ['The 112 Axolotl', 112],
+        ['Trey debugging this at 2am', -1]
     ]
     leaderboardBackground = Image.open("112 Leaderboard Background.avif")
     app.Bg = CMUImage(leaderboardBackground.resize((1200,600)))
@@ -114,8 +114,8 @@ def onStep(app):
             app.stepsTaken = 1800 #to account for the fact that could finish before step limit
             app.containersWithPoints = [] #containers can now score points on the other end
             app.activeSide = 'right'
-        if app.stepsTaken == 3600 or app.successfulDrops==6:
-            app.scores.append(app.points)
+        if app.stepsTaken == 3600 or (app.successfulDrops==6 and app.gameOver==False):
+            app.scores.append(['You', app.points])
             app.gameOver = True
 
         if app.connectedController:
@@ -195,18 +195,14 @@ def updateContainers(app):
 
 def redrawAll(app):
     if app.gameOver:
-        drawRect(0, 0, app.width, app.height, fill='white') #cmu_graphics doesn't
-        #let me make a screen with key controls in my app :(
-        drawLabel('You hit a field element and shredded your propellors :(', app.width/2, 20)
         displayLeaderboard(app)
-        drawLabel('Press r to restart', app.width/2, app.height-20)
 
     else:
         drawLabel('Use WASD for tilt if no controller connected', app.width/2, 50)
         drawLabel(app.timer, app.width/2, 70)
 
         y = 5
-        for line in app.messages.splitlines():
+        for line in app.message.splitlines():
             drawLabel(line, 10, y, align='left-top',size=16, fill='fireBrick')
             y+=16
         
@@ -253,12 +249,26 @@ def displayLeaderboard(app):
     drawImage(app.Bg, 0, 0)  
     drawRect(app.width/2, 75, 700, 100, fill='white', opacity=75, align='center')
     drawLabel('Leaderboard', app.width/2, 75, font='orbitron', size=80)
-    drawRect(app.width/2, app.height/2, 500, 300, fill='white', opacity=75, align='center')
+    drawRect(app.width/2, 450, 500, 300, fill='white', opacity=75, align='center')
     leaderboard = sorted(copy.deepcopy(app.scores), key = lambda x: x[1], reverse=True)
 
-    screenPosY = 215
+    screenPosY = 325
     for team in leaderboard:
         drawLabel(f'{team[0]} ----- {team[1]}', app.width/2, screenPosY, font='orbitron', bold=True, size=20)
         screenPosY += 35
+
+    drawRect(app.width/2, 250, 750, 35, fill='white', opacity=75, align='center')
+    if len(app.message)>0:
+            drawLabel(app.message)
+    else:
+        playerIndex = None
+        for i in range(len(leaderboard)):
+            if leaderboard[i][0] == 'You':
+                playerIndex = i
+        message = f'You finished ahead of {leaderboard[playerIndex+1][0]}. Good job!'
+        drawLabel(message, app.width/2, 250, font='orbitron', size=20)
+
+    drawRect(app.width/2, 150, 300, 30, fill='white', opacity=75, align='center')
+    drawLabel('Press r to restart', app.width/2, 150, font='orbitron',size=16)
 
 runApp()
