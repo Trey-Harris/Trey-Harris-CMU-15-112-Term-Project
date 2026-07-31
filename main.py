@@ -18,7 +18,7 @@ def resetApp(app):
     #its cleaner if integrated in main)
     app.stepsTaken = 0
     app.timer = 60
-    app.gameOver = False
+    app.gameOver = True
     app.points = 0
     app.successfulDrops = 0
     app.containersWithPoints = []
@@ -115,6 +115,7 @@ def onStep(app):
             app.containersWithPoints = [] #containers can now score points on the other end
             app.activeSide = 'right'
         if app.stepsTaken == 3600 or app.successfulDrops==6:
+            app.scores.append(app.points)
             app.gameOver = True
 
         if app.connectedController:
@@ -250,10 +251,14 @@ def drawPrism(numSides, cords, cx, cy, color):
 
 def displayLeaderboard(app): 
     drawImage(app.Bg, 0, 0)  
+    drawRect(app.width/2, 75, 700, 100, fill='white', opacity=75, align='center')
+    drawLabel('Leaderboard', app.width/2, 75, font='orbitron', size=80)
+    drawRect(app.width/2, app.height/2, 500, 300, fill='white', opacity=75, align='center')
     leaderboard = sorted(copy.deepcopy(app.scores), key = lambda x: x[1], reverse=True)
-    screenPosY = 50
+
+    screenPosY = 215
     for team in leaderboard:
-        drawLabel(f'{team[0]} ----- {team[1]}', app.width/2, screenPosY, font='orbitron', bold=True)
-        screenPosY += 25
+        drawLabel(f'{team[0]} ----- {team[1]}', app.width/2, screenPosY, font='orbitron', bold=True, size=20)
+        screenPosY += 35
 
 runApp()
