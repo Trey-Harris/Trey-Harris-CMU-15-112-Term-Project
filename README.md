@@ -2,8 +2,7 @@ Sky Scavenger - AVR Flight Simulator:
 A realistic flight expirience designed to give players a taste of the Advanced 
 Vertical Robotics competition without risking an expensive drone. This emulates
 the real compeition: Fly over a wall to collect dumpsters and fly them back 
-over to the open dropoff spots. The faster you do this, the more points you get. 
-($5 to whoever beats the 112 Dragon) 
+over to the open dropoff spots. The faster you do this, the more points you get.
 
 Video Link: https://drive.google.com/file/d/1VMtZG0uuREL_CWmZ8ZTE4a0Og7JwS54f/view?usp=sharing
 
